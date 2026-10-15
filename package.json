@@ -1,0 +1,17 @@
+{
+  "name": "sol_tradingbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node test_mode.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^18.0.6",
+    "telegraf": "^4.16.3"
+  }
+}
