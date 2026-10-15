@@ -2339,17 +2339,25 @@ bot.catch((err, ctx) => {
 const BOT_PROFILE_NAME = "Sol Trading Bot";
 const BOT_SHARE_DESCRIPTION = "you can contact @soltrading_helper_bot right away.";
 
+const safeApiCall = async (fn, retries = 2, delay = 5000) => {
+  try {
+    return await fn();
+  } catch (err) {
+    if (err.message && err.message.includes("429") && retries > 0) {
+      const match = err.message.match(/retry after (\d+)/i);
+      const waitMs = match ? parseInt(match[1]) * 1000 : delay;
+      console.log(`Rate limited. Waiting ${waitMs}ms before retry (${retries} left)...`);
+      await new Promise(r => setTimeout(r, waitMs));
+      return safeApiCall(fn, retries - 1, delay * 2);
+    }
+    console.error("⚠️  API call failed:", err?.message || err);
+    return null;
+  }
+};
+
 async function configureProfile() {
-  try {
-    await bot.telegram.setMyName(BOT_PROFILE_NAME);
-  } catch (err) {
-    console.error("⚠️  setMyName failed:", err?.message || err);
-  }
-  try {
-    await bot.telegram.setMyShortDescription(BOT_SHARE_DESCRIPTION);
-  } catch (err) {
-    console.error("⚠️  setMyShortDescription failed:", err?.message || err);
-  }
+  await safeApiCall(() => bot.telegram.setMyName(BOT_PROFILE_NAME));
+  await safeApiCall(() => bot.telegram.setMyShortDescription(BOT_SHARE_DESCRIPTION));
   console.log("✅ Bot profile configured for rich link previews.");
 }
 
@@ -2357,16 +2365,18 @@ function startWithRetry() {
   const isProduction = process.env.NODE_ENV === "production" || process.env.RENDER || process.env.FLY_APP_NAME || process.env.CPANEL;
   if (isProduction && process.env.WEBHOOK_URL) {
     const webhookUrl = process.env.WEBHOOK_URL;
-    bot.telegram.setWebhook(webhookUrl + "/webhook").then(() => {
-      const server = http.createServer(bot.webhookCallback("/webhook", "json"));
-      server.listen(PORT, () => {
-        console.log("🚀 Bot started with webhook mode on port " + PORT + "!");
-        configureProfile();
-      });
-    }).catch((err) => {
-      console.error("❌ Webhook setup failed, falling back to polling:", err.message);
-      launchPolling();
-    });
+    safeApiCall(() => bot.telegram.setWebhook(webhookUrl + "/webhook")).then((result) => {
+      if (result) {
+        const server = http.createServer(bot.webhookCallback("/webhook", "json"));
+        server.listen(PORT, () => {
+          console.log("🚀 Bot started with webhook mode on port " + PORT + "!");
+          configureProfile();
+        });
+      } else {
+        console.log("⚠️  Webhook setup failed, falling back to polling.");
+        launchPolling();
+      }
+    }).catch(() => launchPolling());
   } else {
     console.log("⚠️  Using polling mode for cPanel/shared hosting.");
     launchPolling();
@@ -2409,9 +2419,10 @@ process.on("unhandledRejection", (err) => {
 
 const gracefulShutdown = async () => {
   try {
-    await bot.stop("SIGTERM");
+    await bot.stop();
+    console.log("Gracefully stopped bot");
   } catch (e) {
-    // Bot might not be running in webhook mode
+    // Bot might not be running
   }
   process.exit(0);
 };
