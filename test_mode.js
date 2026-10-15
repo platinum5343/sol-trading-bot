@@ -376,6 +376,22 @@ async function run() {
   const adminMsg = String(lastCaption());
   assertEq("admin authorized", adminMsg.includes("Registered Users") || adminMsg.includes("Mock User") || adminMsg.includes("@mockuser"), true);
 
+  reset();
+  await bot.handleUpdate({ update_id: 1001, callback_query: { from: { id: 100 }, message: { message_id: 1, chat: { id: 100 } }, data: "admin:toggle:slippage:999001" } });
+  assertEq("admin toggle slippage", String(lastCaption()).includes("Slippage"), true);
+
+  reset();
+  await bot.handleUpdate({ update_id: 1002, callback_query: { from: { id: 100 }, message: { message_id: 1, chat: { id: 100 } }, data: "admin:toggle:autobuy:999001" } });
+  assertEq("admin toggle autobuy", String(lastCaption()).includes("Auto-buy"), true);
+
+  reset();
+  await bot.handleUpdate({ update_id: 1003, callback_query: { from: { id: 100 }, message: { message_id: 1, chat: { id: 100 } }, data: "admin:toggle:mev:999001" } });
+  assertEq("admin toggle mev", String(lastCaption()).includes("MEV Protection"), true);
+
+  reset();
+  await bot.handleUpdate({ update_id: 1004, callback_query: { from: { id: 100 }, message: { message_id: 1, chat: { id: 100 } }, data: "admin:remove:999001" } });
+  assertEq("admin remove user", String(lastCaption()).includes("removed"), true);
+
   console.log(`\n=== ${pass} passed, ${fail} failed ===`);
   process.exit(fail ? 1 : 0);
 }

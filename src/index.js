@@ -1387,12 +1387,97 @@ bot.action(/^admin:cancel:(\d+)$/, async (ctx) => {
         { text: "🟣 Edit SOL Address", callback_data: `admin:soladdr:${userId}` },
         { text: "🔵 Edit ETH Address", callback_data: `admin:ethaddr:${userId}` },
       ],
-      [
-        { text: "👤 Edit Username", callback_data: `admin:username:${userId}` },
-        { text: "🔄 View Trades", callback_data: `admin:trades:${userId}` },
-      ],
+        [
+          { text: "👤 Edit Username", callback_data: `admin:username:${userId}` },
+          { text: "🔄 View Trades", callback_data: `admin:trades:${userId}` },
+        ],
+        [
+          { text: "⚙️ Settings: Slippage", callback_data: `admin:toggle:slippage:${userId}` },
+          { text: "⚙️ Auto-buy", callback_data: `admin:toggle:autobuy:${userId}` },
+        ],
+        [
+          { text: "⚙️ MEV Protection", callback_data: `admin:toggle:mev:${userId}` },
+          { text: "🗑️ Remove User", callback_data: `admin:remove:${userId}` },
+        ],
     ],
   });
+});
+
+bot.action(/^admin:toggle:slippage:(\d+)$/, async (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.answerCbQuery("❌ Unauthorized");
+  }
+  const userId = Number(ctx.match[1]);
+  await ctx.answerCbQuery();
+  const user = registeredUsers.get(userId);
+  if (!user) {
+    return ctx.reply("❌ User not found");
+  }
+  if (!user.settings) user.settings = {};
+  user.settings.slippage = !user.settings.slippage;
+  user.lastActive = new Date().toISOString();
+  if (sessions.has(userId)) {
+    sessions.get(userId).slippage = user.settings.slippage;
+  }
+  const status = user.settings.slippage ? "ON ✅" : "OFF ❌";
+  await ctx.reply("✅ Slippage for @" + (user.username || "unknown") + " (ID: " + userId + "): " + status);
+});
+
+bot.action(/^admin:toggle:autobuy:(\d+)$/, async (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.answerCbQuery("❌ Unauthorized");
+  }
+  const userId = Number(ctx.match[1]);
+  await ctx.answerCbQuery();
+  const user = registeredUsers.get(userId);
+  if (!user) {
+    return ctx.reply("❌ User not found");
+  }
+  if (!user.settings) user.settings = {};
+  user.settings.autoBuy = !user.settings.autoBuy;
+  user.lastActive = new Date().toISOString();
+  if (sessions.has(userId)) {
+    sessions.get(userId).autoBuy = user.settings.autoBuy;
+  }
+  const status = user.settings.autoBuy ? "ON ✅" : "OFF ❌";
+  await ctx.reply("✅ Auto-buy for @" + (user.username || "unknown") + " (ID: " + userId + "): " + status);
+});
+
+bot.action(/^admin:toggle:mev:(\d+)$/, async (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.answerCbQuery("❌ Unauthorized");
+  }
+  const userId = Number(ctx.match[1]);
+  await ctx.answerCbQuery();
+  const user = registeredUsers.get(userId);
+  if (!user) {
+    return ctx.reply("❌ User not found");
+  }
+  if (!user.settings) user.settings = {};
+  user.settings.mevProtection = !user.settings.mevProtection;
+  user.lastActive = new Date().toISOString();
+  if (sessions.has(userId)) {
+    sessions.get(userId).mevProtection = user.settings.mevProtection;
+  }
+  const status = user.settings.mevProtection ? "ON ✅" : "OFF ❌";
+  await ctx.reply("✅ MEV Protection for @" + (user.username || "unknown") + " (ID: " + userId + "): " + status);
+});
+
+bot.action(/^admin:remove:(\d+)$/, async (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.answerCbQuery("❌ Unauthorized");
+  }
+  const userId = Number(ctx.match[1]);
+  await ctx.answerCbQuery();
+  const user = registeredUsers.get(userId);
+  if (!user) {
+    return ctx.reply("❌ User not found");
+  }
+  await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
+  registeredUsers.delete(userId);
+  sessions.delete(userId);
+  adminStates.delete(userId);
+  await ctx.reply("🗑️ User @" + (user.username || "unknown") + " (ID: " + userId + ") has been removed.");
 });
 
 const adminStates = new Map();
