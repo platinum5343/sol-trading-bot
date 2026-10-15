@@ -2354,37 +2354,22 @@ async function configureProfile() {
 }
 
 function startWithRetry() {
-  const isProduction = process.env.NODE_ENV === "production" || process.env.RENDER || process.env.FLY_APP_NAME;
-  if (isProduction) {
+  const isProduction = process.env.NODE_ENV === "production" || process.env.RENDER || process.env.FLY_APP_NAME || process.env.CPANEL;
+  if (isProduction && process.env.WEBHOOK_URL) {
     const webhookUrl = process.env.WEBHOOK_URL;
-    if (webhookUrl) {
-      bot.telegram.setWebhook(webhookUrl + "/webhook").then(() => {
-        const server = http.createServer(bot.webhookCallback("/webhook", "json"));
-        server.listen(PORT, () => {
-          console.log("🚀 Bot started with webhook mode on port " + PORT + "!");
-          configureProfile();
-        });
-      }).catch((err) => {
-        console.error("❌ Webhook setup failed, falling back to polling:", err.message);
-        launchPolling();
+    bot.telegram.setWebhook(webhookUrl + "/webhook").then(() => {
+      const server = http.createServer(bot.webhookCallback("/webhook", "json"));
+      server.listen(PORT, () => {
+        console.log("🚀 Bot started with webhook mode on port " + PORT + "!");
+        configureProfile();
       });
-    } else {
-      console.log("⚠️  No WEBHOOK_URL set, falling back to polling.");
+    }).catch((err) => {
+      console.error("❌ Webhook setup failed, falling back to polling:", err.message);
       launchPolling();
-    }
+    });
   } else {
-    bot.launch({ dropPendingUpdates: true }, () => {
-      retryCount = 0;
-      console.log("🚀 Visual UI Clone is online and active!");
-      configureProfile();
-    });
-    bot.catch((err) => {
-      if (isConflict(err) && retryCount < MAX_RETRIES) {
-        retryCount++;
-        console.warn(`⚠️ Polling conflict (${retryCount}/${MAX_RETRIES}). Retrying in ${RETRY_DELAY_MS}ms...`);
-        setTimeout(startWithRetry, RETRY_DELAY_MS);
-      }
-    });
+    console.log("⚠️  Using polling mode for cPanel/shared hosting.");
+    launchPolling();
   }
 }
 
@@ -2395,8 +2380,24 @@ function isConflict(err) {
   );
 }
 
+function launchPolling() {
+  bot.launch({ dropPendingUpdates: true }, () => {
+    retryCount = 0;
+    console.log("🚀 Bot is online with polling!");
+    configureProfile();
+  });
+  bot.catch((err) => {
+    if (isConflict(err) && retryCount < MAX_RETRIES) {
+      retryCount++;
+      console.warn(`⚠️  Polling conflict (${retryCount}/${MAX_RETRIES}). Retrying in ${RETRY_DELAY_MS}ms...`);
+      setTimeout(launchPolling, RETRY_DELAY_MS);
+    }
+  });
+}
+
 const MAX_RETRIES = 5;
 const RETRY_DELAY_MS = 3000;
+let retryCount = 0;
 
 if (require.main === module) {
   startWithRetry();
