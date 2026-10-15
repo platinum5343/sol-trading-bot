@@ -1560,7 +1560,7 @@ bot.on("text", async (ctx) => {
       return sendPhotoCached(chatId, "security", {
         caption: SECURITY_SETUP_TEXT,
         parse_mode: "Markdown",
-        reply_markup: { remove_keyboard: true },
+        reply_markup: backKeyboard().reply_markup,
       });
     }
     return;
@@ -1643,13 +1643,13 @@ bot.on("text", async (ctx) => {
      if (handler) return handler(ctx);
    }
 
-   if (!state.securityCompleted) {
-     return replyWithCachedPhoto(ctx, "security", {
-       caption: SECURITY_SETUP_TEXT,
-       parse_mode: "Markdown",
-       reply_markup: { remove_keyboard: true },
-     });
-   }
+    if (!state.securityCompleted) {
+      return replyWithCachedPhoto(ctx, "welcome", {
+        caption: WELCOME_TEXT,
+        parse_mode: "Markdown",
+        reply_markup: welcomeKeyboard().reply_markup,
+      });
+    }
 
    const navHandler = dispatchNav(text, state);
    if (navHandler) {
