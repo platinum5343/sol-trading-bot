@@ -9,8 +9,8 @@ services:
       - key: NODE_ENV
         value: production
       - key: HTTP_API_TOKEN
-        value: "your_token_here"
+        value: "8876375896:AAHqJZJaxoldHlEQRUEvODCxantr3BgP5kw"
       - key: BOT_USERNAME
-        value: "t.me/soltrading_helper_bot"
+        value: "soltrading_helper_bot"
       - key: ADMIN_ID
         value: "7751385595,5940013895"
