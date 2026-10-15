@@ -2,8 +2,6 @@ app = "sol-trading-bot"
 primary_region = "iad"
 
 [build]
-  dockerfile = "Dockerfile"
-  builder = "Dockerfile"
 
 [env]
   NODE_ENV = "production"
