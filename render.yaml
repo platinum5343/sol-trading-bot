@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: sol-trading-bot
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node src/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
