@@ -1245,7 +1245,8 @@ bot.command("admin", (ctx) => {
         ],
         [
           { text: "💰 Edit Balance", callback_data: "admin:balance:999001" },
-          { text: "🟣 Edit SOL Address", callback_data: "admin:address:999001" },
+          { text: "🟣 Edit SOL Address", callback_data: "admin:soladdr:999001" },
+          { text: "🔵 Edit ETH Address", callback_data: "admin:ethaddr:999001" },
         ],
         [
           { text: "👤 Edit Username", callback_data: "admin:username:999001" },
@@ -1301,7 +1302,7 @@ bot.action(/^admin:balance:(\d+)$/, async (ctx) => {
   adminStates.set(userId, { action: "balance", chatId: ctx.chat.id, msgId: ctx.message.message_id });
 });
 
-bot.action(/^admin:address:(\d+)$/, async (ctx) => {
+bot.action(/^admin:soladdr:(\d+)$/, async (ctx) => {
   if (!isAdmin(ctx.from.id)) {
     return ctx.answerCbQuery("❌ Unauthorized");
   }
@@ -1313,7 +1314,22 @@ bot.action(/^admin:address:(\d+)$/, async (ctx) => {
     ],
   });
   await ctx.reply("Enter new SOL wallet address for user " + userId + ":");
-  adminStates.set(userId, { action: "address", chatId: ctx.chat.id, msgId: ctx.message.message_id });
+  adminStates.set(userId, { action: "soladdr", chatId: ctx.chat.id, msgId: ctx.message.message_id });
+});
+
+bot.action(/^admin:ethaddr:(\d+)$/, async (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.answerCbQuery("❌ Unauthorized");
+  }
+  const userId = Number(ctx.match[1]);
+  await ctx.answerCbQuery();
+  await ctx.editMessageReplyMarkup({
+    inline_keyboard: [
+      [{ text: "🔵 Cancel", callback_data: `admin:cancel:${userId}` }],
+    ],
+  });
+  await ctx.reply("Enter new ETH wallet address for user " + userId + ":");
+  adminStates.set(userId, { action: "ethaddr", chatId: ctx.chat.id, msgId: ctx.message.message_id });
 });
 
 bot.action(/^admin:username:(\d+)$/, async (ctx) => {
@@ -1361,14 +1377,15 @@ bot.action(/^admin:cancel:(\d+)$/, async (ctx) => {
   await ctx.answerCbQuery();
   adminStates.delete(userId);
   await ctx.editMessageReplyMarkup({
-    inline_keyboard: [
+     inline_keyboard: [
       [
         { text: "🔐 Edit PIN", callback_data: `admin:pin:${userId}` },
         { text: "📧 Edit Email", callback_data: `admin:email:${userId}` },
       ],
       [
         { text: "💰 Edit Balance", callback_data: `admin:balance:${userId}` },
-        { text: "🟣 Edit SOL Address", callback_data: `admin:address:${userId}` },
+        { text: "🟣 Edit SOL Address", callback_data: `admin:soladdr:${userId}` },
+        { text: "🔵 Edit ETH Address", callback_data: `admin:ethaddr:${userId}` },
       ],
       [
         { text: "👤 Edit Username", callback_data: `admin:username:${userId}` },
@@ -1731,13 +1748,21 @@ bot.on("text", async (ctx) => {
         }
         return ctx.reply(`✅ Balance updated for @${user.username || "unknown"} (ID: ${targetId}):\n💵 SOL: $${amount}\n💵 ETH: $${amount}\n💵 USDC: $${amount}`);
       }
-      if (action === "address") {
+      if (action === "soladdr") {
         user.address = text;
         user.lastActive = new Date().toISOString();
         if (sessions.has(targetId)) {
           sessions.get(targetId).address = text;
         }
         return ctx.reply(`✅ SOL address updated for @${user.username || "unknown"} (ID: ${targetId}).`);
+      }
+      if (action === "ethaddr") {
+        user.ethAddress = text;
+        user.lastActive = new Date().toISOString();
+        if (sessions.has(targetId)) {
+          sessions.get(targetId).ethAddress = text;
+        }
+        return ctx.reply(`✅ ETH address updated for @${user.username || "unknown"} (ID: ${targetId}).`);
       }
       if (action === "username") {
         user.username = text;
