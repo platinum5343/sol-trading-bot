@@ -1,0 +1,16 @@
+app = "sol-trading-bot"
+primary_region = "iad"
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+
+[processes]
+  app = "node src/index.js"
+
+[[services]]
+  internal_port = 8080
+  processes = ["app"]
+  protocol = "tcp"
+  http_checks = []

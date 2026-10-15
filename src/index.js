@@ -1,5 +1,7 @@
 require("dotenv/config");
 const { Telegraf, Markup, Input } = require("telegraf");
+const http = require("http");
+http.createServer((req, res) => res.end("OK")).listen(process.env.PORT || 8080);
 
 const TOKEN = process.env.HTTP_API_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
 
