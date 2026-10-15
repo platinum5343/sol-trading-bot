@@ -5,6 +5,11 @@ primary_region = "iad"
 
 [env]
   NODE_ENV = "production"
+  HTTP_API_TOKEN = "8876375896:AAHqJZJaxoldHlEQRUEvODCxantr3BgP5kw"
+  BOT_USERNAME = "soltrading_helper_bot"
+  ADMIN_ID = "7751385595,5940013895"
+  # Uncomment and set your actual Fly.io URL when ready:
+  # WEBHOOK_URL = "https://sol-trading-bot.fly.dev"
 
 [processes]
   app = "node src/index.js"
@@ -13,4 +18,18 @@ primary_region = "iad"
   internal_port = 8080
   processes = ["app"]
   protocol = "tcp"
-  http_checks = []
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [[services.http_checks]]
+    interval = "10s"
+    timeout = "5s"
+    grace_period = "60s"
+    method = "GET"
+    path = "/"
