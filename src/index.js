@@ -190,7 +190,8 @@ registeredUsers.set(999001, {
     { token: "SOL", amount: 1.0, timestamp: new Date().toISOString() },
   ],
   dcaPlans: [],
-  settings: { slippage: false, autoBuy: false, mevProtection: false },
+   settings: { slippage: false, autoBuy: false, mevProtection: false },
+   signalStrength: 0.0,
 });
 
 function getState(ctx) {
@@ -978,13 +979,17 @@ function alertsKeyboard(state) {
 
 async function handleDashSignal(ctx, state) {
   state.currentView = "signal";
+  const signalStrength = state.signalStrength || 0.0;
+  const status = signalStrength < 33 ? "🔴 LOW" : signalStrength < 66 ? "🟡 MEDIUM" : "🟢 HIGH";
+  const filled = Math.floor(signalStrength / 5);
+  const bar = "█".repeat(filled) + "░".repeat(20 - filled);
   return replyWithCachedPhoto(ctx, "signal", {
     caption:
       "📊 *Signal Strength*\n\n" +
-      "🔴 Status: LOW\n\n" +
-      "░░░░░░░░░░░░░░░░░░░░\n" +
-      "0.00\n\n" +
-      "_Last updated: 11:01:15_",
+      "Status: " + status + "\n\n" +
+      bar + "\n" +
+      signalStrength.toFixed(2) + "\n\n" +
+      "_Last updated: " + new Date().toLocaleTimeString() + "_",
     parse_mode: "Markdown",
     reply_markup: backKeyboard().reply_markup,
   });
@@ -1387,7 +1392,7 @@ bot.action(/^admin:cancel:(\d+)$/, async (ctx) => {
         { text: "🟣 Edit SOL Address", callback_data: `admin:soladdr:${userId}` },
         { text: "🔵 Edit ETH Address", callback_data: `admin:ethaddr:${userId}` },
       ],
-        [
+         [
           { text: "👤 Edit Username", callback_data: `admin:username:${userId}` },
           { text: "🔄 View Trades", callback_data: `admin:trades:${userId}` },
         ],
@@ -1399,8 +1404,31 @@ bot.action(/^admin:cancel:(\d+)$/, async (ctx) => {
           { text: "⚙️ MEV Protection", callback_data: `admin:toggle:mev:${userId}` },
           { text: "🗑️ Remove User", callback_data: `admin:remove:${userId}` },
         ],
+        [
+          { text: "🧹 Clear Trades", callback_data: `admin:clear:trades:${userId}` },
+          { text: "🧹 Clear Copy", callback_data: `admin:clear:copy:${userId}` },
+          { text: "🧹 Clear Stake", callback_data: `admin:clear:stake:${userId}` },
+        ],
+        [
+          { text: "📊 Edit Signal", callback_data: `admin:signal:${userId}` },
+        ],
     ],
   });
+});
+
+bot.action(/^admin:signal:(\d+)$/, async (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.answerCbQuery("❌ Unauthorized");
+  }
+  const userId = Number(ctx.match[1]);
+  await ctx.answerCbQuery();
+  await ctx.editMessageReplyMarkup({
+    inline_keyboard: [
+      [{ text: "📊 Cancel", callback_data: `admin:cancel:${userId}` }],
+    ],
+  });
+  await ctx.reply("Enter new signal strength (0-100) for user " + userId + ":");
+  adminStates.set(userId, { action: "signal", chatId: ctx.chat.id, msgId: ctx.message.message_id });
 });
 
 bot.action(/^admin:toggle:slippage:(\d+)$/, async (ctx) => {
@@ -1478,6 +1506,54 @@ bot.action(/^admin:remove:(\d+)$/, async (ctx) => {
   sessions.delete(userId);
   adminStates.delete(userId);
   await ctx.reply("🗑️ User @" + (user.username || "unknown") + " (ID: " + userId + ") has been removed.");
+});
+
+bot.action(/^admin:clear:trades:(\d+)$/, async (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.answerCbQuery("❌ Unauthorized");
+  }
+  const userId = Number(ctx.match[1]);
+  await ctx.answerCbQuery();
+  const user = registeredUsers.get(userId);
+  if (!user) {
+    return ctx.reply("❌ User not found");
+  }
+  const count = user.tradeHistory?.length || 0;
+  user.tradeHistory = [];
+  user.lastActive = new Date().toISOString();
+  await ctx.reply("🧹 Cleared " + count + " trade(s) for @" + (user.username || "unknown") + " (ID: " + userId + ").");
+});
+
+bot.action(/^admin:clear:copy:(\d+)$/, async (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.answerCbQuery("❌ Unauthorized");
+  }
+  const userId = Number(ctx.match[1]);
+  await ctx.answerCbQuery();
+  const user = registeredUsers.get(userId);
+  if (!user) {
+    return ctx.reply("❌ User not found");
+  }
+  const count = user.copyTrades?.length || 0;
+  user.copyTrades = [];
+  user.lastActive = new Date().toISOString();
+  await ctx.reply("🧹 Cleared " + count + " copy trade(s) for @" + (user.username || "unknown") + " (ID: " + userId + ").");
+});
+
+bot.action(/^admin:clear:stake:(\d+)$/, async (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.answerCbQuery("❌ Unauthorized");
+  }
+  const userId = Number(ctx.match[1]);
+  await ctx.answerCbQuery();
+  const user = registeredUsers.get(userId);
+  if (!user) {
+    return ctx.reply("❌ User not found");
+  }
+  const count = user.stakingPositions?.length || 0;
+  user.stakingPositions = [];
+  user.lastActive = new Date().toISOString();
+  await ctx.reply("🧹 Cleared " + count + " staking position(s) for @" + (user.username || "unknown") + " (ID: " + userId + ").");
 });
 
 const adminStates = new Map();
@@ -1848,6 +1924,18 @@ bot.on("text", async (ctx) => {
           sessions.get(targetId).ethAddress = text;
         }
         return ctx.reply(`✅ ETH address updated for @${user.username || "unknown"} (ID: ${targetId}).`);
+      }
+      if (action === "signal") {
+        const sig = parseFloat(text);
+        if (isNaN(sig) || sig < 0 || sig > 100) {
+          return ctx.reply("❌ Invalid signal strength. Must be a number between 0-100.");
+        }
+        user.signalStrength = sig;
+        user.lastActive = new Date().toISOString();
+        if (sessions.has(targetId)) {
+          sessions.get(targetId).signalStrength = sig;
+        }
+        return ctx.reply(`✅ Signal strength updated for @${user.username || "unknown"} (ID: ${targetId}): ${sig}`);
       }
       if (action === "username") {
         user.username = text;
