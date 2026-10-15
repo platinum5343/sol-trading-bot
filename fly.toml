@@ -8,8 +8,8 @@ primary_region = "iad"
   HTTP_API_TOKEN = "8876375896:AAHqJZJaxoldHlEQRUEvODCxantr3BgP5kw"
   BOT_USERNAME = "soltrading_helper_bot"
   ADMIN_ID = "7751385595,5940013895"
-  # Uncomment and set your actual Fly.io URL when ready:
-  # WEBHOOK_URL = "https://sol-trading-bot.fly.dev"
+  # Enable webhook for instant response (set to your Fly.io app URL):
+  WEBHOOK_URL = "https://sol-trading-bot-ckt2ba.fly.dev"
 
 [processes]
   app = "node src/index.js"
