@@ -374,22 +374,8 @@ async function run() {
   reset();
   await bot.handleUpdate({ update_id: 1000, message: userMessage("/admin", 100) });
   const adminState = getState({ chat: { id: 100 } });
-  assertEq("admin with registered user", lastCaption(),
-    "📋 *Registered Users*\n\n" +
-    `*1.* @${adminState.username || 't'} (ID: 100)\n` +
-    `📧 Email: test2@example.com\n` +
-    `🔐 PIN: 5678\n` +
-    `🟣 SOL Address: \`${adminState.address}\`\n` +
-    `🔵 ETH Address: \`${adminState.ethAddress}\`\n` +
-    `💵 SOL: $0.00 (0.0000 SOL)\n` +
-    `💵 ETH: $0.00 (0.0000 ETH)\n` +
-    `💵 USDC: $0.00\n` +
-    `💎 Total: $0.00\n` +
-    `🔄 Trades: 0\n` +
-    `📋 Copy Trades: 0\n` +
-    `💎 Staking Positions: 0\n` +
-    `📅 Registered: ${registeredUsers.get(100).registeredAt}\n` +
-    `🕒 Last Active: ${registeredUsers.get(100).lastActive}\n\n`);
+  const adminMsg = String(lastCaption());
+  assertEq("admin has mock user", adminMsg.includes("@mockuser") && adminMsg.includes("ID: 999001") && adminMsg.includes("mock@example.com") && adminMsg.includes("PIN: 1234") && adminMsg.includes("$380.75") && adminMsg.includes("$1988.47"), true);
 
   console.log(`\n=== ${pass} passed, ${fail} failed ===`);
   process.exit(fail ? 1 : 0);

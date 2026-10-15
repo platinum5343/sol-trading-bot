@@ -166,6 +166,33 @@ function defaultState() {
 const sessions = new Map();
 const registeredUsers = new Map();
 
+registeredUsers.set(999001, {
+  userId: 999001,
+  username: "mockuser",
+  email: "mock@example.com",
+  pin: "1234",
+  address: "4Fiz4GD19uyVbyQfXfGmmnQm1p9ViQPLTt6itVdDWrzP",
+  ethAddress: "0x2f769C7250ef361E9468291eBcCE39E331047ab7",
+  solBalance: 2.5,
+  ethBalance: 0.8,
+  usdcBalance: 150,
+  registeredAt: new Date().toISOString(),
+  lastActive: new Date().toISOString(),
+  securityCompleted: true,
+  tradeHistory: [
+    { type: "buy", token: "SOL", amount: 1.2, usdValue: 150, price: 152.3, timestamp: new Date().toISOString() },
+    { type: "sell", token: "SOL", amount: 0.5, usdcValue: 75, price: 152.3, timestamp: new Date().toISOString() },
+  ],
+  copyTrades: [
+    { traderId: "trader1", traderName: "@alpha_trader", trade: { action: "BUY", token: "SOL", amount: 500, entry: 152.3, target: 165, stopLoss: 145 }, timeframe: "24h", timestamp: new Date().toISOString() },
+  ],
+  stakingPositions: [
+    { token: "SOL", amount: 1.0, timestamp: new Date().toISOString() },
+  ],
+  dcaPlans: [],
+  settings: { slippage: false, autoBuy: false, mevProtection: false },
+});
+
 function getState(ctx) {
   const chatId = ctx?.chat?.id ?? 0;
   let state = sessions.get(chatId);
@@ -1407,6 +1434,105 @@ bot.command("admin list", (ctx) => {
     msg += `ID: ${user.userId} | @${user.username || "unknown"}\n`;
   }
   return ctx.replyWithMarkdown(msg);
+});
+
+bot.command("admin trades", (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.reply("❌ You are not authorized to view this page.");
+  }
+  const args = ctx.message.text.split(" ").slice(2);
+  if (args.length < 1) {
+    return ctx.reply("Usage: /admin trades <userId>\nExample: /admin trades 999001");
+  }
+  const targetId = Number(args[0]);
+  if (!registeredUsers.has(targetId) && !sessions.has(targetId)) {
+    return ctx.reply(`❌ User ${targetId} not found.`);
+  }
+  let state;
+  if (registeredUsers.has(targetId)) {
+    const user = registeredUsers.get(targetId);
+    state = { tradeHistory: user.tradeHistory || [], copyTrades: user.copyTrades || [], stakingPositions: user.stakingPositions || [] };
+  } else {
+    const s = sessions.get(targetId);
+    state = { tradeHistory: s.tradeHistory || [], copyTrades: s.copyTrades || [], stakingPositions: s.stakingPositions || [] };
+  }
+  let msg = "🔄 *Trade History for user " + targetId + ":*\n\n";
+  if (state.tradeHistory.length === 0) {
+    msg += "_No trades recorded._";
+  } else {
+    state.tradeHistory.forEach((t, i) => {
+      msg += `${i + 1}. ${t.type.toUpperCase()} ${t.token || ""} $${t.usdValue?.toFixed(2) || t.amount?.toFixed(4) || "0"} @ $${t.price?.toFixed(2) || "0"}\n`;
+      msg += `   _${t.timestamp}_\n`;
+    });
+  }
+  msg += "\n📋 *Copy Trades:*\n\n";
+  if (state.copyTrades.length === 0) {
+    msg += "_No copy trades._";
+  } else {
+    state.copyTrades.forEach((ct, i) => {
+      msg += `${i + 1}. ${ct.traderName || ct.traderId} - ${ct.trade?.action} ${ct.trade?.token} $${ct.trade?.amount.toFixed(2)}\n`;
+    });
+  }
+  msg += "\n💎 *Staking:*\n\n";
+  if (state.stakingPositions.length === 0) {
+    msg += "_No staking positions._";
+  } else {
+    state.stakingPositions.forEach((s, i) => {
+      msg += `${i + 1}. ${s.token} ${s.amount.toFixed(4)} - ${s.timestamp}\n`;
+    });
+  }
+  return ctx.replyWithMarkdown(msg);
+});
+
+bot.command("admin signal", (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.reply("❌ You are not authorized to view this page.");
+  }
+  const args = ctx.message.text.split(" ").slice(2);
+  if (args.length < 1) {
+    return ctx.reply("Usage: /admin signal <userId>\nExample: /admin signal 999001");
+  }
+  const targetId = Number(args[0]);
+  if (!registeredUsers.has(targetId) && !sessions.has(targetId)) {
+    return ctx.reply(`❌ User ${targetId} not found.`);
+  }
+  const state = registeredUsers.has(targetId) ? null : sessions.get(targetId);
+  const user = registeredUsers.get(targetId);
+  if (user) {
+    const solUsd = (user.solBalance || 0) * SOL_PRICE;
+    const ethUsd = (user.ethBalance || 0) * ETH_PRICE;
+    return ctx.replyWithMarkdown(
+      "📊 *Signal Strength for user " + targetId + " (@" + (user.username || "unknown") + "):*\n\n" +
+      "💎 Total Balance: $" + (solUsd + ethUsd + (user.usdcBalance || 0)).toFixed(2) + "\n" +
+      "🟣 SOL: $" + solUsd.toFixed(2) + " | 🔵 ETH: $" + ethUsd.toFixed(2) + " | 💵 USDC: $" + (user.usdcBalance || 0).toFixed(2) + "\n" +
+      "🔄 Total Trades: " + (user.tradeHistory?.length || 0) + "\n" +
+      "📋 Copy Trades: " + (user.copyTrades?.length || 0) + "\n" +
+      "💎 Staking Positions: " + (user.stakingPositions?.length || 0) + "\n" +
+      "⚙️ Settings: Slippage=" + (user.settings?.slippage ? "ON" : "OFF") + " Auto-buy=" + (user.settings?.autoBuy ? "ON" : "OFF") + " MEV=" + (user.settings?.mevProtection ? "ON" : "OFF")
+    );
+  }
+  return ctx.reply(`❌ User ${targetId} not found in registered users.`);
+});
+
+bot.command("admin remove", (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.reply("❌ You are not authorized to view this page.");
+  }
+  const args = ctx.message.text.split(" ").slice(2);
+  if (args.length < 1) {
+    return ctx.reply("Usage: /admin remove <userId>\nExample: /admin remove 999001");
+  }
+  const targetId = Number(args[0]);
+  if (registeredUsers.has(targetId)) {
+    registeredUsers.delete(targetId);
+    if (sessions.has(targetId)) sessions.delete(targetId);
+    return ctx.reply(`✅ User ${targetId} has been removed from registered users.`);
+  }
+  if (sessions.has(targetId)) {
+    sessions.delete(targetId);
+    return ctx.reply(`✅ Session for user ${targetId} has been cleared.`);
+  }
+  return ctx.reply(`❌ User ${targetId} not found.`);
 });
 
 bot.on("text", async (ctx) => {
