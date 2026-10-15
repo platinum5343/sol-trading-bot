@@ -5,6 +5,7 @@ services:
     plan: free
     buildCommand: npm install
     startCommand: node src/index.js
+    healthCheckPath: /
     envVars:
       - key: NODE_ENV
         value: production
@@ -14,3 +15,6 @@ services:
         value: "soltrading_helper_bot"
       - key: ADMIN_ID
         value: "7751385595,5940013895"
+      # Add your actual Render URL here for webhook mode (faster responses):
+      # - key: WEBHOOK_URL
+      #   value: "https://sol-trading-bot.onrender.com"

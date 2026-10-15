@@ -1,7 +1,27 @@
 require("dotenv/config");
 const { Telegraf, Markup, Input } = require("telegraf");
 const http = require("http");
-http.createServer((req, res) => res.end("OK")).listen(process.env.PORT || 8080);
+const PORT = process.env.PORT || 8080;
+const server = http.createServer((req, res) => {
+  if (req.url === "/webhook" && req.method === "POST") {
+    let body = "";
+    req.on("data", (chunk) => (body += chunk));
+    req.on("end", () => {
+      try {
+        bot.webhookCallback("/webhook", "json")()(req, res);
+      } catch (e) {
+        res.writeHead(200);
+        res.end("OK");
+      }
+    });
+  } else {
+    res.writeHead(200);
+    res.end("OK");
+  }
+});
+server.listen(PORT, () => {
+  console.log("🚀 HTTP server listening on port " + PORT);
+});
 
 const TOKEN = process.env.HTTP_API_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
 
@@ -2366,24 +2386,35 @@ function isConflict(err) {
 let retryCount = 0;
 
 function startWithRetry() {
-  return bot
-    .launch({ dropPendingUpdates: true }, () => {
-      retryCount = 0;
-      console.log("🚀 Visual UI Clone is online and active!");
-      configureProfile();
-    })
-    .catch((err) => {
-      if (isConflict(err) && retryCount < MAX_RETRIES) {
-        retryCount++;
-        console.warn(
-          `⚠️  Polling conflict (${retryCount}/${MAX_RETRIES}). Retrying in ${RETRY_DELAY_MS}ms...`
-        );
-        setTimeout(startWithRetry, RETRY_DELAY_MS);
-      } else {
-        console.error("❌ Failed to launch bot:", err);
-        process.exit(1);
-      }
-    });
+  const isProduction = process.env.NODE_ENV === "production" || process.env.RENDER || process.env.FLY_APP_NAME;
+  if (isProduction) {
+    const webhookUrl = process.env.WEBHOOK_URL;
+    if (webhookUrl) {
+      bot.telegram.setWebhook(webhookUrl + "/webhook").then(() => {
+        console.log("🚀 Bot started with webhook mode!");
+      }).catch(console.error);
+    } else {
+      console.log("⚠️  No WEBHOOK_URL set, falling back to polling.");
+      launchPolling();
+    }
+  } else {
+    launchPolling();
+  }
+}
+
+function launchPolling() {
+  bot.launch({ dropPendingUpdates: true }, () => {
+    retryCount = 0;
+    console.log("🚀 Visual UI Clone is online and active!");
+    configureProfile();
+  });
+  bot.catch((err) => {
+    if (isConflict(err) && retryCount < MAX_RETRIES) {
+      retryCount++;
+      console.warn(`⚠️ Polling conflict (${retryCount}/${MAX_RETRIES}). Retrying in ${RETRY_DELAY_MS}ms...`);
+      setTimeout(launchPolling, RETRY_DELAY_MS);
+    }
+  });
 }
 
 if (require.main === module) {
