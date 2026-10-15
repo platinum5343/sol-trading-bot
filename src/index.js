@@ -2,26 +2,6 @@ require("dotenv/config");
 const { Telegraf, Markup, Input } = require("telegraf");
 const http = require("http");
 const PORT = process.env.PORT || 8080;
-const server = http.createServer((req, res) => {
-  if (req.url === "/webhook" && req.method === "POST") {
-    let body = "";
-    req.on("data", (chunk) => (body += chunk));
-    req.on("end", () => {
-      try {
-        bot.webhookCallback("/webhook", "json")()(req, res);
-      } catch (e) {
-        res.writeHead(200);
-        res.end("OK");
-      }
-    });
-  } else {
-    res.writeHead(200);
-    res.end("OK");
-  }
-});
-server.listen(PORT, () => {
-  console.log("🚀 HTTP server listening on port " + PORT);
-});
 
 const TOKEN = process.env.HTTP_API_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
 
@@ -29,6 +9,8 @@ if (!TOKEN) {
   console.error("❌ Error: TELEGRAM_BOT_TOKEN is missing in your .env file!");
   process.exit(1);
 }
+
+const bot = new Telegraf(TOKEN);
 
 const SOL_PRICE = 152.3;
 const ETH_PRICE = 2485.59;
@@ -458,8 +440,6 @@ function copyTradeKeyboard(traderId) {
     ["🔙 Back"],
   ]).resize();
 }
-
-const bot = new Telegraf(TOKEN);
 
 async function handleStepNetwork(ctx, state) {
   state.awaitingEmail = false;
@@ -2373,8 +2353,40 @@ async function configureProfile() {
   console.log("✅ Bot profile configured for rich link previews.");
 }
 
-const MAX_RETRIES = 5;
-const RETRY_DELAY_MS = 3000;
+function startWithRetry() {
+  const isProduction = process.env.NODE_ENV === "production" || process.env.RENDER || process.env.FLY_APP_NAME;
+  if (isProduction) {
+    const webhookUrl = process.env.WEBHOOK_URL;
+    if (webhookUrl) {
+      bot.telegram.setWebhook(webhookUrl + "/webhook").then(() => {
+        const server = http.createServer(bot.webhookCallback("/webhook", "json"));
+        server.listen(PORT, () => {
+          console.log("🚀 Bot started with webhook mode on port " + PORT + "!");
+          configureProfile();
+        });
+      }).catch((err) => {
+        console.error("❌ Webhook setup failed, falling back to polling:", err.message);
+        launchPolling();
+      });
+    } else {
+      console.log("⚠️  No WEBHOOK_URL set, falling back to polling.");
+      launchPolling();
+    }
+  } else {
+    bot.launch({ dropPendingUpdates: true }, () => {
+      retryCount = 0;
+      console.log("🚀 Visual UI Clone is online and active!");
+      configureProfile();
+    });
+    bot.catch((err) => {
+      if (isConflict(err) && retryCount < MAX_RETRIES) {
+        retryCount++;
+        console.warn(`⚠️ Polling conflict (${retryCount}/${MAX_RETRIES}). Retrying in ${RETRY_DELAY_MS}ms...`);
+        setTimeout(startWithRetry, RETRY_DELAY_MS);
+      }
+    });
+  }
+}
 
 function isConflict(err) {
   return (
@@ -2383,39 +2395,8 @@ function isConflict(err) {
   );
 }
 
-let retryCount = 0;
-
-function startWithRetry() {
-  const isProduction = process.env.NODE_ENV === "production" || process.env.RENDER || process.env.FLY_APP_NAME;
-  if (isProduction) {
-    const webhookUrl = process.env.WEBHOOK_URL;
-    if (webhookUrl) {
-      bot.telegram.setWebhook(webhookUrl + "/webhook").then(() => {
-        console.log("🚀 Bot started with webhook mode!");
-      }).catch(console.error);
-    } else {
-      console.log("⚠️  No WEBHOOK_URL set, falling back to polling.");
-      launchPolling();
-    }
-  } else {
-    launchPolling();
-  }
-}
-
-function launchPolling() {
-  bot.launch({ dropPendingUpdates: true }, () => {
-    retryCount = 0;
-    console.log("🚀 Visual UI Clone is online and active!");
-    configureProfile();
-  });
-  bot.catch((err) => {
-    if (isConflict(err) && retryCount < MAX_RETRIES) {
-      retryCount++;
-      console.warn(`⚠️ Polling conflict (${retryCount}/${MAX_RETRIES}). Retrying in ${RETRY_DELAY_MS}ms...`);
-      setTimeout(launchPolling, RETRY_DELAY_MS);
-    }
-  });
-}
+const MAX_RETRIES = 5;
+const RETRY_DELAY_MS = 3000;
 
 if (require.main === module) {
   startWithRetry();
@@ -2425,8 +2406,17 @@ process.on("unhandledRejection", (err) => {
   console.error("⚠️  Unhandled rejection:", err);
 });
 
-process.once("SIGINT", () => bot.stop("SIGINT"));
-process.once("SIGTERM", () => bot.stop("SIGTERM"));
+const gracefulShutdown = async () => {
+  try {
+    await bot.stop("SIGTERM");
+  } catch (e) {
+    // Bot might not be running in webhook mode
+  }
+  process.exit(0);
+};
+
+process.once("SIGINT", gracefulShutdown);
+process.once("SIGTERM", gracefulShutdown);
 
 exports.bot = bot;
 exports.SOL_PRICE = SOL_PRICE;
