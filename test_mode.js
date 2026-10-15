@@ -1,5 +1,6 @@
+process.env.ADMIN_ID = "100";
 const { Telegram } = require("telegraf");
-const { bot, WELCOME_TEXT, NETWORK_TEXT, welcomeKeyboard, dashboardKeyboard, networkKeyboard, getState, SECURITY_COMPLETE_TEXT, NETWORK_GRID_TEXT, securityCompleteKeyboard, SOL_PRICE, MOCK_TRADERS, swapPairKeyboard, withdrawTokenKeyboard, stakeTokenKeyboard, copyTradersKeyboard, copyTradeKeyboard, dcaKeyboard, buyTokenKeyboard, sellTokenKeyboard, alertsKeyboard, ETH_PRICE, backKeyboard } = require("./src/index");
+const { bot, WELCOME_TEXT, NETWORK_TEXT, welcomeKeyboard, dashboardKeyboard, networkKeyboard, getState, SECURITY_COMPLETE_TEXT, NETWORK_GRID_TEXT, securityCompleteKeyboard, SOL_PRICE, MOCK_TRADERS, swapPairKeyboard, withdrawTokenKeyboard, stakeTokenKeyboard, copyTradersKeyboard, copyTradeKeyboard, dcaKeyboard, buyTokenKeyboard, sellTokenKeyboard, alertsKeyboard, ETH_PRICE, backKeyboard, registeredUsers } = require("./src/index");
 
 let msgId = 0;
 const calls = [];
@@ -363,6 +364,22 @@ async function run() {
   reset();
   await bot.handleUpdate({ update_id: 71, message: userMessage("🔙 Back") });
   assertEq("back from alerts caption", lastCaption(), NETWORK_GRID_TEXT(getState({ chat: { id: 100 } })));
+
+  reset();
+  await bot.handleUpdate({ update_id: 999, message: userMessage("/admin", 999) });
+  assertEq("admin unauthorized", lastCaption(), "❌ You are not authorized to view this page.");
+
+  reset();
+  await bot.handleUpdate({ update_id: 1000, message: userMessage("/admin", 100) });
+  const adminState = getState({ chat: { id: 100 } });
+  assertEq("admin with registered user", lastCaption(),
+    "📋 *Registered Users*\n\n" +
+    `*1.* @${adminState.username || 't'} (ID: 100)\n` +
+    `📧 test2@example.com\n` +
+    `🔐 PIN: 5678\n` +
+    `🟣 Address: \`${adminState.address}\`\n` +
+    `💵 SOL: $0.00 | ETH: $0.00 | USDC: $0.00\n` +
+    `📅 Registered: ${registeredUsers.get(100).registeredAt}\n\n`);
 
   console.log(`\n=== ${pass} passed, ${fail} failed ===`);
   process.exit(fail ? 1 : 0);

