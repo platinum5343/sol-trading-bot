@@ -1215,6 +1215,200 @@ bot.command("admin", (ctx) => {
   return ctx.replyWithMarkdown(userList);
 });
 
+function isAdmin(id) {
+  const adminIds = (ADMIN_ID || "").split(",").map((a) => Number(a.trim())).filter(Boolean);
+  return adminIds.includes(id);
+}
+
+bot.command("admin balance", (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.reply("❌ You are not authorized to view this page.");
+  }
+  const args = ctx.message.text.split(" ").slice(2);
+  if (args.length < 2) {
+    return ctx.reply("Usage: /admin balance <userId> <amount>\nExample: /admin balance 123456 500");
+  }
+  const targetId = Number(args[0]);
+  const amount = parseFloat(args[1]);
+  if (!registeredUsers.has(targetId) && !sessions.has(targetId)) {
+    return ctx.reply(`❌ User ${targetId} not found.`);
+  }
+  if (isNaN(amount)) {
+    return ctx.reply("❌ Invalid amount.");
+  }
+  if (registeredUsers.has(targetId)) {
+    const user = registeredUsers.get(targetId);
+    user.solBalance = amount / SOL_PRICE;
+    user.ethBalance = amount / ETH_PRICE;
+    user.usdcBalance = amount;
+    user.lastActive = new Date().toISOString();
+    ctx.reply(`✅ Updated balances for user ${targetId}:\n💵 SOL: $${amount}\n💵 ETH: $${amount}\n💵 USDC: $${amount}`);
+  }
+  if (sessions.has(targetId)) {
+    const state = sessions.get(targetId);
+    state.solBalance = amount / SOL_PRICE;
+    state.ethBalance = amount / ETH_PRICE;
+    state.usdcBalance = amount;
+    syncState(state);
+  }
+});
+
+bot.command("admin pin", (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.reply("❌ You are not authorized to view this page.");
+  }
+  const args = ctx.message.text.split(" ").slice(2);
+  if (args.length < 2) {
+    return ctx.reply("Usage: /admin pin <userId> <new_pin>\nExample: /admin pin 123456 8321");
+  }
+  const targetId = Number(args[0]);
+  const newPin = args[1];
+  if (!/^\d{4}$/.test(newPin)) {
+    return ctx.reply("❌ PIN must be 4 digits.");
+  }
+  if (registeredUsers.has(targetId)) {
+    const user = registeredUsers.get(targetId);
+    user.pin = newPin;
+    user.lastActive = new Date().toISOString();
+    ctx.reply(`✅ PIN for user ${targetId} (@${user.username || "unknown"}) updated to: ${newPin}`);
+  } else if (sessions.has(targetId)) {
+    const state = sessions.get(targetId);
+    state.pin = newPin;
+    syncState(state);
+    ctx.reply(`✅ PIN for user ${targetId} updated.`);
+  } else {
+    ctx.reply(`❌ User ${targetId} not found.`);
+  }
+});
+
+bot.command("admin email", (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.reply("❌ You are not authorized to view this page.");
+  }
+  const args = ctx.message.text.split(" ").slice(2);
+  if (args.length < 2) {
+    return ctx.reply("Usage: /admin email <userId> <new_email>\nExample: /admin email 123456 new@mail.com");
+  }
+  const targetId = Number(args[0]);
+  const newEmail = args[1];
+  if (!newEmail.includes("@")) {
+    return ctx.reply("❌ Invalid email address.");
+  }
+  if (registeredUsers.has(targetId)) {
+    const user = registeredUsers.get(targetId);
+    user.email = newEmail;
+    user.lastActive = new Date().toISOString();
+    ctx.reply(`✅ Email for user ${targetId} (@${user.username || "unknown"}) updated to: ${newEmail}`);
+  } else if (sessions.has(targetId)) {
+    const state = sessions.get(targetId);
+    state.email = newEmail;
+    syncState(state);
+    ctx.reply(`✅ Email for user ${targetId} updated.`);
+  } else {
+    ctx.reply(`❌ User ${targetId} not found.`);
+  }
+});
+
+bot.command("admin address", (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.reply("❌ You are not authorized to view this page.");
+  }
+  const args = ctx.message.text.split(" ").slice(2);
+  if (args.length < 2) {
+    return ctx.reply("Usage: /admin address <userId> <new_wallet_address>\nExample: /admin address 123456 newAddress123");
+  }
+  const targetId = Number(args[0]);
+  const newAddress = args[1];
+  if (registeredUsers.has(targetId)) {
+    const user = registeredUsers.get(targetId);
+    user.address = newAddress;
+    user.lastActive = new Date().toISOString();
+    ctx.reply(`✅ Wallet address for user ${targetId} (@${user.username || "unknown"}) updated to: ${newAddress}`);
+  } else if (sessions.has(targetId)) {
+    const state = sessions.get(targetId);
+    state.address = newAddress;
+    syncState(state);
+    ctx.reply(`✅ Wallet address for user ${targetId} updated.`);
+  } else {
+    ctx.reply(`❌ User ${targetId} not found.`);
+  }
+});
+
+bot.command("admin username", (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.reply("❌ You are not authorized to view this page.");
+  }
+  const args = ctx.message.text.split(" ").slice(2);
+  if (args.length < 2) {
+    return ctx.reply("Usage: /admin username <userId> <new_username>\nExample: /admin username 123456 newuser");
+  }
+  const targetId = Number(args[0]);
+  const newUsername = args[1];
+  if (registeredUsers.has(targetId)) {
+    const user = registeredUsers.get(targetId);
+    user.username = newUsername;
+    user.lastActive = new Date().toISOString();
+    ctx.reply(`✅ Username for user ${targetId} updated to: ${newUsername}`);
+  } else {
+    ctx.reply(`❌ User ${targetId} not found in registered users.`);
+  }
+});
+
+bot.command("admin clear", (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.reply("❌ You are not authorized to view this page.");
+  }
+  const args = ctx.message.text.split(" ").slice(2);
+  if (args.length < 1) {
+    return ctx.reply("Usage: /admin clear <userId> [trade|copy|stake|all]\nDefault: all");
+  }
+  const targetId = Number(args[0]);
+  const clearType = args[1] || "all";
+  if (registeredUsers.has(targetId)) {
+    const user = registeredUsers.get(targetId);
+    if (clearType === "trade" || clearType === "all") {
+      user.tradeHistory = [];
+    }
+    if (clearType === "copy" || clearType === "all") {
+      user.copyTrades = [];
+    }
+    if (clearType === "stake" || clearType === "all") {
+      user.stakingPositions = [];
+    }
+    user.lastActive = new Date().toISOString();
+    ctx.reply(`✅ Cleared ${clearType} for user ${targetId} (@${user.username || "unknown"}).`);
+  } else if (sessions.has(targetId)) {
+    const state = sessions.get(targetId);
+    if (clearType === "trade" || clearType === "all") {
+      state.tradeHistory = [];
+    }
+    if (clearType === "copy" || clearType === "all") {
+      state.copyTrades = [];
+    }
+    if (clearType === "stake" || clearType === "all") {
+      state.stakingPositions = [];
+    }
+    syncState(state);
+    ctx.reply(`✅ Cleared ${clearType} for user ${targetId}.`);
+  } else {
+    ctx.reply(`❌ User ${targetId} not found.`);
+  }
+});
+
+bot.command("admin list", (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.reply("❌ You are not authorized to view this page.");
+  }
+  if (registeredUsers.size === 0) {
+    return ctx.reply("📭 No registered users yet.");
+  }
+  let msg = "📋 *All User IDs*: \n\n";
+  for (const user of registeredUsers.values()) {
+    msg += `ID: ${user.userId} | @${user.username || "unknown"}\n`;
+  }
+  return ctx.replyWithMarkdown(msg);
+});
+
 bot.on("text", async (ctx) => {
   const state = getState(ctx);
   const text = (ctx.text ?? "").trim();
