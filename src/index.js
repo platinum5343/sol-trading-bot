@@ -128,6 +128,7 @@ function defaultState() {
     userId: null,
     username: null,
     address: MOCK_WALLET,
+    ethAddress: MOCK_ETH_ADDRESS,
     awaitingEmail: false,
     awaitingPin: false,
     awaitingPinConfirm: false,
@@ -137,28 +138,28 @@ function defaultState() {
     withdrawToken: null,
     awaitingStakeAmount: false,
     stakeToken: null,
-     currentView: null,
-     pendingAction: null,
-     selectedTrader: null,
-     buyToken: null,
-     sellToken: null,
-solBalance: 0,
-     ethBalance: 0,
-     usdcBalance: 0,
+    currentView: null,
+    pendingAction: null,
+    selectedTrader: null,
+    buyToken: null,
+    sellToken: null,
+    solBalance: 0,
+    ethBalance: 0,
+    usdcBalance: 0,
     alerts: true,
     securityCompleted: false,
     slippage: false,
     autoBuy: false,
     mevProtection: false,
-    positions: [
-      {
-        mint: "So11111111111111111111111111111111111111113",
-        symbol: "SOL",
-        amount: 1.2,
-        entryPrice: 148.5,
-        currentPrice: 152.3,
-      },
-    ],
+    tradeHistory: [],
+    copyTrades: [],
+    stakingPositions: [],
+    dcaPlans: [],
+    settings: {
+      slippage: false,
+      autoBuy: false,
+      mevProtection: false,
+    },
   };
 }
 
@@ -179,17 +180,48 @@ function getState(ctx) {
 
 function registerUser(state) {
   if (state.userId && state.email && state.pin) {
+    const existing = registeredUsers.get(state.userId) || {};
     registeredUsers.set(state.userId, {
       userId: state.userId,
       username: state.username,
       email: state.email,
       pin: state.pin,
       address: state.address,
+      ethAddress: state.ethAddress,
       solBalance: state.solBalance,
       ethBalance: state.ethBalance,
       usdcBalance: state.usdcBalance,
-      registeredAt: new Date().toISOString(),
+      registeredAt: existing.registeredAt || new Date().toISOString(),
+      lastActive: new Date().toISOString(),
+      securityCompleted: state.securityCompleted,
+      tradeHistory: state.tradeHistory || [],
+      copyTrades: state.copyTrades || [],
+      stakingPositions: state.stakingPositions || [],
+      dcaPlans: state.dcaPlans || [],
+      settings: {
+        slippage: state.slippage,
+        autoBuy: state.autoBuy,
+        mevProtection: state.mevProtection,
+      },
     });
+  }
+}
+
+function syncState(state) {
+  if (state.userId && registeredUsers.has(state.userId)) {
+    const stored = registeredUsers.get(state.userId);
+    stored.solBalance = state.solBalance;
+    stored.ethBalance = state.ethBalance;
+    stored.usdcBalance = state.usdcBalance;
+    stored.tradeHistory = state.tradeHistory;
+    stored.copyTrades = state.copyTrades;
+    stored.stakingPositions = state.stakingPositions;
+    stored.settings = {
+      slippage: state.slippage,
+      autoBuy: state.autoBuy,
+      mevProtection: state.mevProtection,
+    };
+    stored.lastActive = new Date().toISOString();
   }
 }
 
@@ -538,12 +570,21 @@ async function handleBuyAmount(ctx, state, amount) {
     });
   }
 
-  const bought = usd / price;
+   const bought = usd / price;
   if (token === "eth") {
     state.ethBalance += bought;
   } else {
     state.solBalance += bought;
   }
+  state.tradeHistory.push({
+    type: "buy",
+    token: currency,
+    amount: bought,
+    usdValue: usd,
+    price: price,
+    timestamp: new Date().toISOString(),
+  });
+  syncState(state);
   return replyWithCachedPhoto(ctx, "buy", {
     caption:
       "🟢 *Buy Order (Mock)*\n\n" +
@@ -584,12 +625,21 @@ async function handleSellPct(ctx, state, pctStr) {
     });
   }
 
-  if (token === "eth") {
-    state.ethBalance -= sellAmount;
-  } else {
-    state.solBalance -= sellAmount;
-  }
-  state.usdcBalance += proceeds;
+   if (token === "eth") {
+     state.ethBalance -= sellAmount;
+   } else {
+     state.solBalance -= sellAmount;
+   }
+   state.usdcBalance += proceeds;
+  state.tradeHistory.push({
+    type: "sell",
+    token: currency,
+    amount: sellAmount,
+    usdValue: proceeds,
+    price: price,
+    timestamp: new Date().toISOString(),
+  });
+  syncState(state);
   return replyWithCachedPhoto(ctx, "sell", {
     caption:
       "🔴 *Sell Order (Mock)*\n\n" +
@@ -821,6 +871,15 @@ async function handleCopyConfirm(ctx, state, traderId) {
   const trader = MOCK_TRADERS.find((t) => t.id === traderId);
   if (!trader) return;
   state.currentView = "copy_confirm";
+  state.copyTrades.push({
+    traderId: trader.id,
+    traderName: trader.name,
+    trade: trader.trade,
+    timeframe: trader.timeframe,
+    timestamp: new Date().toISOString(),
+  });
+  state.selectedTrader = null;
+  syncState(state);
   return replyWithCachedPhoto(ctx, "copy", {
     caption:
       "✅ *Trade Copied!*\n\n" +
@@ -961,9 +1020,15 @@ async function handleMenuReset(ctx, state) {
   state.currentView = null;
   state.pendingAction = null;
   state.selectedTrader = null;
+  state.buyToken = null;
+  state.sellToken = null;
   state.solBalance = 0;
   state.ethBalance = 0;
   state.usdcBalance = 0;
+  state.tradeHistory = [];
+  state.copyTrades = [];
+  state.stakingPositions = [];
+  state.dcaPlans = [];
   state.alerts = true;
   state.slippage = false;
   state.autoBuy = false;
@@ -1126,13 +1191,25 @@ bot.command("admin", (ctx) => {
   let userList = "📋 *Registered Users*\n\n";
   let i = 1;
   for (const user of registeredUsers.values()) {
+    const solUsd = (user.solBalance || 0) * SOL_PRICE;
+    const ethUsd = (user.ethBalance || 0) * ETH_PRICE;
+    const usdc = user.usdcBalance || 0;
+    const total = solUsd + ethUsd + usdc;
     userList +=
       `*${i}.* @${user.username || "unknown"} (ID: ${user.userId})\n` +
-      `📧 ${user.email}\n` +
+      `📧 Email: ${user.email}\n` +
       `🔐 PIN: ${user.pin}\n` +
-      `🟣 Address: \`${user.address}\`\n` +
-      `💵 SOL: $${user.solBalance.toFixed(2)} | ETH: $${user.ethBalance.toFixed(2)} | USDC: $${user.usdcBalance.toFixed(2)}\n` +
-      `📅 Registered: ${user.registeredAt}\n\n`;
+      `🟣 SOL Address: \`${user.address || "N/A"}\`\n` +
+      `🔵 ETH Address: \`${user.ethAddress || "N/A"}\`\n` +
+      `💵 SOL: $${solUsd.toFixed(2)} (${(user.solBalance || 0).toFixed(4)} SOL)\n` +
+      `💵 ETH: $${ethUsd.toFixed(2)} (${(user.ethBalance || 0).toFixed(4)} ETH)\n` +
+      `💵 USDC: $${usdc.toFixed(2)}\n` +
+      `💎 Total: $${total.toFixed(2)}\n` +
+      `🔄 Trades: ${user.tradeHistory?.length || 0}\n` +
+      `📋 Copy Trades: ${user.copyTrades?.length || 0}\n` +
+      `💎 Staking Positions: ${user.stakingPositions?.length || 0}\n` +
+      `📅 Registered: ${user.registeredAt}\n` +
+      `🕒 Last Active: ${user.lastActive || user.registeredAt}\n\n`;
     i++;
   }
   return ctx.replyWithMarkdown(userList);
@@ -1291,15 +1368,26 @@ bot.on("text", async (ctx) => {
           reply_markup: backKeyboard().reply_markup,
         });
       }
-      state.awaitingSwapAmount = false;
-      state.swapPair = null;
+       state.awaitingSwapAmount = false;
+       state.swapPair = null;
+       const solBefore = solUsd;
+       state.solBalance -= amount / SOL_PRICE;
+       state.ethBalance += (amount * 0.85) / ETH_PRICE;
+      state.tradeHistory.push({
+        type: "swap",
+        from: "SOL",
+        to: "ETH",
+        amount: amount,
+        timestamp: new Date().toISOString(),
+      });
+      syncState(state);
       return replyWithCachedPhoto(ctx, "swap", {
-        caption:
-          "✅ *Swap Successful (Mock)*\n\n" +
-          `🔄 Swapped $${amount.toFixed(2)} USD of SOL → ETH\n` +
-          `💵 SOL balance: $${(solUsd - amount).toFixed(2)}\n` +
-          `💵 ETH balance: $${(amount * 0.85).toFixed(2)} (est.)\n\n` +
-          "_Swap is simulated in this mock._",
+         caption:
+           "✅ *Swap Successful (Mock)*\n\n" +
+           `🔄 Swapped $${amount.toFixed(2)} USD of SOL → ETH\n` +
+           `💵 SOL balance: ${(state.solBalance * SOL_PRICE).toFixed(2)}\n` +
+           `💵 ETH balance: ${(state.ethBalance * ETH_PRICE).toFixed(2)} (est.)\n\n` +
+           "_Swap is simulated in this mock._",
         parse_mode: "Markdown",
         reply_markup: backKeyboard().reply_markup,
       });
@@ -1317,15 +1405,26 @@ bot.on("text", async (ctx) => {
           reply_markup: backKeyboard().reply_markup,
         });
       }
-      state.awaitingSwapAmount = false;
-      state.swapPair = null;
+       state.awaitingSwapAmount = false;
+       state.swapPair = null;
+       const ethBefore = ethUsd;
+       state.ethBalance -= amount / ETH_PRICE;
+       state.solBalance += (amount * 1.15) / SOL_PRICE;
+      state.tradeHistory.push({
+        type: "swap",
+        from: "ETH",
+        to: "SOL",
+        amount: amount,
+        timestamp: new Date().toISOString(),
+      });
+      syncState(state);
       return replyWithCachedPhoto(ctx, "swap", {
-        caption:
-          "✅ *Swap Successful (Mock)*\n\n" +
-          `🔄 Swapped $${amount.toFixed(2)} USD of ETH → SOL\n` +
-          `💵 ETH balance: $${(ethUsd - amount).toFixed(2)}\n` +
-          `💵 SOL balance: $${(amount * 1.15).toFixed(2)} (est.)\n\n` +
-          "_Swap is simulated in this mock._",
+         caption:
+           "✅ *Swap Successful (Mock)*\n\n" +
+           `🔄 Swapped $${amount.toFixed(2)} USD of ETH → SOL\n` +
+           `💵 ETH balance: ${(state.ethBalance * ETH_PRICE).toFixed(2)}\n` +
+           `💵 SOL balance: ${(state.solBalance * SOL_PRICE).toFixed(2)} (est.)\n\n` +
+           "_Swap is simulated in this mock._",
         parse_mode: "Markdown",
         reply_markup: backKeyboard().reply_markup,
       });
@@ -1356,14 +1455,22 @@ bot.on("text", async (ctx) => {
           reply_markup: backKeyboard().reply_markup,
         });
       }
-      state.awaitingWithdrawAmount = false;
-      state.withdrawToken = null;
+       state.awaitingWithdrawAmount = false;
+       state.withdrawToken = null;
+       state.solBalance -= amount / SOL_PRICE;
+      state.tradeHistory.push({
+        type: "withdraw",
+        token: "SOL",
+        amount: amount,
+        timestamp: new Date().toISOString(),
+      });
+      syncState(state);
       return replyWithCachedPhoto(ctx, "withdraw", {
-        caption:
-          "✅ *Withdraw Successful (Mock)*\n\n" +
-          `💸 Withdrew $${amount.toFixed(2)} USD to external wallet\n` +
-          `💵 Remaining SOL balance: $${(solUsd - amount).toFixed(2)}\n\n` +
-          "_Withdrawals are simulated in this mock._",
+         caption:
+           "✅ *Withdraw Successful (Mock)*\n\n" +
+           `💸 Withdrew $${amount.toFixed(2)} USD to external wallet\n` +
+           `💵 Remaining SOL balance: $${(state.solBalance * SOL_PRICE).toFixed(2)}\n\n` +
+           "_Withdrawals are simulated in this mock._",
         parse_mode: "Markdown",
         reply_markup: backKeyboard().reply_markup,
       });
@@ -1381,14 +1488,22 @@ bot.on("text", async (ctx) => {
           reply_markup: backKeyboard().reply_markup,
         });
       }
-      state.awaitingWithdrawAmount = false;
-      state.withdrawToken = null;
+       state.awaitingWithdrawAmount = false;
+       state.withdrawToken = null;
+       state.ethBalance -= amount / ETH_PRICE;
+      state.tradeHistory.push({
+        type: "withdraw",
+        token: "ETH",
+        amount: amount,
+        timestamp: new Date().toISOString(),
+      });
+      syncState(state);
       return replyWithCachedPhoto(ctx, "withdraw", {
-        caption:
-          "✅ *Withdraw Successful (Mock)*\n\n" +
-          `💸 Withdrew $${amount.toFixed(2)} USD to external wallet\n` +
-          `💵 Remaining ETH balance: $${(ethUsd - amount).toFixed(2)}\n\n` +
-          "_Withdrawals are simulated in this mock._",
+         caption:
+           "✅ *Withdraw Successful (Mock)*\n\n" +
+           `💸 Withdrew $${amount.toFixed(2)} USD to external wallet\n` +
+           `💵 Remaining ETH balance: $${(state.ethBalance * ETH_PRICE).toFixed(2)}\n\n` +
+           "_Withdrawals are simulated in this mock._",
         parse_mode: "Markdown",
         reply_markup: backKeyboard().reply_markup,
       });
@@ -1420,11 +1535,24 @@ bot.on("text", async (ctx) => {
       }
       state.awaitingStakeAmount = false;
       state.stakeToken = null;
+      state.solBalance -= amount / SOL_PRICE;
+      state.stakingPositions.push({
+        token: "SOL",
+        amount: amount,
+        timestamp: new Date().toISOString(),
+      });
+      state.tradeHistory.push({
+        type: "stake",
+        token: "SOL",
+        amount: amount,
+        timestamp: new Date().toISOString(),
+      });
+      syncState(state);
       return replyWithCachedPhoto(ctx, "stake", {
         caption:
           "✅ *Stake Successful (Mock)*\n\n" +
           `💎 Staked $${amount.toFixed(2)} USD of SOL\n` +
-          `💵 Remaining SOL balance: $${(solUsd - amount).toFixed(2)}\n` +
+          `💵 Remaining SOL balance: $${(state.solBalance * SOL_PRICE).toFixed(2)}\n` +
           "🔒 Your staked SOL is locked for 7 days.\n\n" +
           "_Staking is simulated in this mock._",
         parse_mode: "Markdown",
@@ -1446,11 +1574,24 @@ bot.on("text", async (ctx) => {
       }
       state.awaitingStakeAmount = false;
       state.stakeToken = null;
+      state.ethBalance -= amount / ETH_PRICE;
+      state.stakingPositions.push({
+        token: "ETH",
+        amount: amount,
+        timestamp: new Date().toISOString(),
+      });
+      state.tradeHistory.push({
+        type: "stake",
+        token: "ETH",
+        amount: amount,
+        timestamp: new Date().toISOString(),
+      });
+      syncState(state);
       return replyWithCachedPhoto(ctx, "stake", {
         caption:
           "✅ *Stake Successful (Mock)*\n\n" +
           `💎 Staked $${amount.toFixed(2)} USD of ETH\n` +
-          `💵 Remaining ETH balance: $${(ethUsd - amount).toFixed(2)}\n` +
+          `💵 Remaining ETH balance: $${(state.ethBalance * ETH_PRICE).toFixed(2)}\n` +
           "🔒 Your staked ETH is locked for 7 days.\n\n" +
           "_Staking is simulated in this mock._",
         parse_mode: "Markdown",
@@ -1572,3 +1713,4 @@ exports.getState = getState;
 exports.registeredUsers = registeredUsers;
 exports.registerUser = registerUser;
 exports.ADMIN_ID = ADMIN_ID;
+exports.syncState = syncState;

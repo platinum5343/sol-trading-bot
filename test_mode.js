@@ -87,7 +87,9 @@ function assertEq(name, actual, expected) {
     console.log("PASS:", name);
   } else {
     fail++;
-    console.log("FAIL:", name, "\n  expected:", e.slice(0, 160), "\n  actual:  ", a.slice(0, 160));
+    console.log("FAIL:", name);
+    console.log("  expected:", e);
+    console.log("  actual:  ", a);
   }
 }
 function assertTruthy(name, val) {
@@ -375,11 +377,19 @@ async function run() {
   assertEq("admin with registered user", lastCaption(),
     "📋 *Registered Users*\n\n" +
     `*1.* @${adminState.username || 't'} (ID: 100)\n` +
-    `📧 test2@example.com\n` +
+    `📧 Email: test2@example.com\n` +
     `🔐 PIN: 5678\n` +
-    `🟣 Address: \`${adminState.address}\`\n` +
-    `💵 SOL: $0.00 | ETH: $0.00 | USDC: $0.00\n` +
-    `📅 Registered: ${registeredUsers.get(100).registeredAt}\n\n`);
+    `🟣 SOL Address: \`${adminState.address}\`\n` +
+    `🔵 ETH Address: \`${adminState.ethAddress}\`\n` +
+    `💵 SOL: $0.00 (0.0000 SOL)\n` +
+    `💵 ETH: $0.00 (0.0000 ETH)\n` +
+    `💵 USDC: $0.00\n` +
+    `💎 Total: $0.00\n` +
+    `🔄 Trades: 0\n` +
+    `📋 Copy Trades: 0\n` +
+    `💎 Staking Positions: 0\n` +
+    `📅 Registered: ${registeredUsers.get(100).registeredAt}\n` +
+    `🕒 Last Active: ${registeredUsers.get(100).lastActive}\n\n`);
 
   console.log(`\n=== ${pass} passed, ${fail} failed ===`);
   process.exit(fail ? 1 : 0);
