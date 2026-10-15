@@ -138,9 +138,9 @@ function defaultState() {
      selectedTrader: null,
      buyToken: null,
      sellToken: null,
-    solBalance: 2.4567,
-    ethBalance: 0,
-    usdcBalance: 1287.34,
+solBalance: 0,
+     ethBalance: 0,
+     usdcBalance: 0,
     alerts: true,
     slippage: false,
     autoBuy: false,
@@ -336,7 +336,7 @@ function stakeTokenKeyboard() {
 
 function dcaKeyboard() {
   return Markup.keyboard([
-    ["new DCA"],
+    ["New DCA"],
     ["My DCA plans"],
     ["🔙 Back"],
   ]).resize();
@@ -936,9 +936,10 @@ async function handleMenuReset(ctx, state) {
   state.currentView = null;
   state.pendingAction = null;
   state.selectedTrader = null;
-   state.solBalance = defaultState().solBalance;
-   state.usdcBalance = defaultState().usdcBalance;
-   state.alerts = true;
+  state.solBalance = 0;
+  state.ethBalance = 0;
+  state.usdcBalance = 0;
+  state.alerts = true;
   state.slippage = false;
   state.autoBuy = false;
   state.mevProtection = false;
@@ -1003,7 +1004,7 @@ function dispatchNav(text, state) {
     if (state.pendingAction === "sell") return (ctx) => handleSellToken(ctx, state, "eth");
   }
 
-  if (text === "new DCA") return (ctx) => handleDcaNew(ctx, state);
+  if (text === "New DCA") return (ctx) => handleDcaNew(ctx, state);
   if (text === "My DCA plans") return (ctx) => handleDcaPlans(ctx, state);
 
   for (const trader of MOCK_TRADERS) {
@@ -1161,6 +1162,23 @@ bot.on("text", async (ctx) => {
       parse_mode: "Markdown",
       reply_markup: backKeyboard().reply_markup,
     });
+  }
+
+  const navHandler = dispatchNav(text, state);
+  if (navHandler) {
+    state.awaitingEmail = false;
+    state.awaitingPin = false;
+    state.awaitingPinConfirm = false;
+    state.awaitingSwapAmount = false;
+    state.swapPair = null;
+    state.awaitingWithdrawAmount = false;
+    state.withdrawToken = null;
+    state.awaitingStakeAmount = false;
+    state.stakeToken = null;
+    state.buyToken = null;
+    state.sellToken = null;
+    state.pendingAction = null;
+    return navHandler(ctx);
   }
 
   if (state.awaitingSwapAmount) {
@@ -1374,11 +1392,6 @@ bot.on("text", async (ctx) => {
       parse_mode: "Markdown",
       reply_markup: welcomeKeyboard().reply_markup,
     });
-  }
-
-  const navHandler = dispatchNav(text, state);
-  if (navHandler) {
-    return navHandler(ctx);
   }
 
   return handleMenuDashboard(ctx, state);
