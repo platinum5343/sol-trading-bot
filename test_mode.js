@@ -202,7 +202,7 @@ async function run() {
   await bot.handleUpdate({ update_id: 22, message: userMessage("👥 Copy Trade") });
   assertEq("copy method", lastMethod(), "sendPhoto");
   const expectedTraders = MOCK_TRADERS.map((t, i) =>
-    `${i + 1}. ${t.avatar} ${t.name} — ${t.trade.token} ${t.trade.action === "BUY" ? "↑" : "↓"} ${t.timeframe}`
+    `${i + 1}. ${t.avatar} ${t.name.replace(/@/g, "").replace(/_/g, "\\_")} — ${t.trade.token} ${t.trade.action === "BUY" ? "↑" : "↓"} ${t.timeframe}`
   ).join("\n");
   assertEq("copy caption", lastCaption(),
     "👥 *Copy Trading*\n\nFollow traders and mirror their trades:\n\n" +
@@ -214,7 +214,7 @@ async function run() {
   await bot.handleUpdate({ update_id: 23, message: userMessage(`${MOCK_TRADERS[0].avatar} ${MOCK_TRADERS[0].name}`) });
   const t1 = MOCK_TRADERS[0];
   assertEq("trader1 detail caption", lastCaption(),
-    `👥 *${t1.name}*\n\n` +
+    `👥 *${t1.name.replace(/@/g, "").replace(/_/g, "\\_")}*\n\n` +
     `📊 *Trade: ${t1.trade.action} ${t1.trade.token}*\n` +
     `💰 Amount: $${t1.trade.amount.toFixed(2)}\n` +
     `⚡ Entry: $${t1.trade.entry.toFixed(4)}\n` +
@@ -232,7 +232,7 @@ async function run() {
     `⚡ Entry: $${t1.trade.entry.toFixed(4)}\n` +
     `🎯 Target: $${t1.trade.target.toFixed(2)}\n` +
     `🛑 Stop Loss: $${t1.trade.stopLoss.toFixed(2)}\n\n` +
-    `_You are now copying ${t1.name}'s trade._\n\n` +
+    `_You are now copying ${t1.name.replace(/@/g, "").replace(/_/g, "\\_")}'s trade._\n\n` +
     "_Copy trading is simulated in this mock._");
 
   reset();

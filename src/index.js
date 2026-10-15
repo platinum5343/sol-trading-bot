@@ -14,7 +14,7 @@ const SOL_PRICE = 152.3;
 const ETH_PRICE = 2485.59;
 const MOCK_WALLET = "4Fiz4GD19uyVbyQfXfGmmnQm1p9ViQPLTt6itVdDWrzP";
 
-const ADMIN_ID = process.env.ADMIN_ID ? parseInt(process.env.ADMIN_ID) : null;
+const ADMIN_ID = process.env.ADMIN_ID || null;
 const MOCK_ETH_ADDRESS = "0x2f769C7250ef361E9468291eBcCE39E331047ab7";
 
 const MOCK_TRADERS = [
@@ -146,6 +146,7 @@ solBalance: 0,
      ethBalance: 0,
      usdcBalance: 0,
     alerts: true,
+    securityCompleted: false,
     slippage: false,
     autoBuy: false,
     mevProtection: false,
@@ -784,7 +785,7 @@ async function handleStakeToken(ctx, state, token) {
 async function handleDashCopy(ctx, state) {
   state.currentView = "copy_trade";
   const tradersText = MOCK_TRADERS.map((t, i) =>
-    `${i + 1}. ${t.avatar} ${t.name} — ${t.trade.token} ${t.trade.action === "BUY" ? "↑" : "↓"} ${t.timeframe}`
+    `${i + 1}. ${t.avatar} ${t.name.replace(/@/g, "").replace(/_/g, "\\_")} — ${t.trade.token} ${t.trade.action === "BUY" ? "↑" : "↓"} ${t.timeframe}`
   ).join("\n");
   return replyWithCachedPhoto(ctx, "copy", {
     caption:
@@ -804,7 +805,7 @@ async function handleCopyTrader(ctx, state, traderId) {
   state.selectedTrader = traderId;
   return replyWithCachedPhoto(ctx, "copy", {
     caption:
-      `👥 *${trader.name}*\n\n` +
+      `👥 *${trader.name.replace(/@/g, "").replace(/_/g, "\\_")}*\n\n` +
       "📊 *Trade: " + trader.trade.action + " " + trader.trade.token + "*\n" +
       `💰 Amount: $${trader.trade.amount.toFixed(2)}\n` +
       `⚡ Entry: $${trader.trade.entry.toFixed(4)}\n` +
@@ -828,7 +829,7 @@ async function handleCopyConfirm(ctx, state, traderId) {
       `⚡ Entry: $${trader.trade.entry.toFixed(4)}\n` +
       `🎯 Target: $${trader.trade.target.toFixed(2)}\n` +
       `🛑 Stop Loss: $${trader.trade.stopLoss.toFixed(2)}\n\n` +
-      `_You are now copying ${trader.name}'s trade._\n\n` +
+      `_You are now copying ${trader.name.replace(/@/g, "").replace(/_/g, "\\_")}'s trade._\n\n` +
       "_Copy trading is simulated in this mock._",
     parse_mode: "Markdown",
     reply_markup: backKeyboard().reply_markup,
@@ -945,11 +946,12 @@ async function handleDashSupport(ctx, state) {
 }
 
 async function handleMenuReset(ctx, state) {
-  state.email = undefined;
-  state.pin = undefined;
+  state.email = null;
+  state.pin = null;
   state.awaitingEmail = false;
   state.awaitingPin = false;
   state.awaitingPinConfirm = false;
+  state.securityCompleted = false;
   state.awaitingSwapAmount = false;
   state.swapPair = null;
   state.awaitingWithdrawAmount = false;
@@ -1114,7 +1116,8 @@ bot.command("reset", (ctx) => {
 });
 
 bot.command("admin", (ctx) => {
-  if (!ADMIN_ID || ctx.from.id !== ADMIN_ID) {
+  const adminIds = (ADMIN_ID || "").split(",").map((id) => Number(id.trim())).filter(Boolean);
+  if (adminIds.length === 0 || !adminIds.includes(ctx.from.id)) {
     return ctx.reply("❌ You are not authorized to view this page.");
   }
   if (registeredUsers.size === 0) {
@@ -1189,6 +1192,7 @@ bot.on("text", async (ctx) => {
     await deleteUserMessage(ctx);
     if (/^\d{4}$/.test(text) && text === state.pin) {
       state.awaitingPinConfirm = false;
+      state.securityCompleted = true;
       registerUser(state);
       return replyWithCachedPhoto(ctx, "dashboard", {
         caption: SECURITY_COMPLETE_TEXT(state),
@@ -1208,26 +1212,63 @@ bot.on("text", async (ctx) => {
       parse_mode: "Markdown",
       reply_markup: backKeyboard().reply_markup,
     });
-  }
+   }
 
-  const navHandler = dispatchNav(text, state);
-  if (navHandler) {
-    state.awaitingEmail = false;
-    state.awaitingPin = false;
-    state.awaitingPinConfirm = false;
-    state.awaitingSwapAmount = false;
-    state.swapPair = null;
-    state.awaitingWithdrawAmount = false;
-    state.withdrawToken = null;
-    state.awaitingStakeAmount = false;
-    state.stakeToken = null;
-    state.buyToken = null;
-    state.sellToken = null;
-    state.pendingAction = null;
-    return navHandler(ctx);
-  }
+   if (/^\/start\b/.test(text)) {
+     state.awaitingEmail = false;
+     state.awaitingPin = false;
+     state.awaitingPinConfirm = false;
+     state.awaitingSwapAmount = false;
+     state.swapPair = null;
+     state.awaitingWithdrawAmount = false;
+     state.withdrawToken = null;
+     state.awaitingStakeAmount = false;
+     state.stakeToken = null;
+     state.buyToken = null;
+     state.sellToken = null;
+     state.currentView = null;
+     state.pendingAction = null;
+     state.selectedTrader = null;
+     return replyWithCachedPhoto(ctx, "welcome", {
+       caption: WELCOME_TEXT,
+       parse_mode: "Markdown",
+       reply_markup: welcomeKeyboard().reply_markup,
+     });
+   }
 
-  if (state.awaitingSwapAmount) {
+   if (
+     text === "✨ Generate Wallet" ||
+     text === "📥 Import Wallet" ||
+     text === "🟣 Solana" ||
+     text === "🔵 Ethereum"
+   ) {
+     const handler = dispatchNav(text, state);
+     if (handler) return handler(ctx);
+   }
+
+   if (!state.securityCompleted) {
+     return replyWithCachedPhoto(ctx, "security", {
+       caption: SECURITY_SETUP_TEXT,
+       parse_mode: "Markdown",
+       reply_markup: { remove_keyboard: true },
+     });
+   }
+
+   const navHandler = dispatchNav(text, state);
+   if (navHandler) {
+     state.awaitingSwapAmount = false;
+     state.swapPair = null;
+     state.awaitingWithdrawAmount = false;
+     state.withdrawToken = null;
+     state.awaitingStakeAmount = false;
+     state.stakeToken = null;
+     state.buyToken = null;
+     state.sellToken = null;
+     state.pendingAction = null;
+     return navHandler(ctx);
+   }
+
+   if (state.awaitingSwapAmount) {
     await deleteUserMessage(ctx);
     const amount = parseFloat(text);
     if (isNaN(amount) || amount <= 0) {
@@ -1416,32 +1457,14 @@ bot.on("text", async (ctx) => {
         reply_markup: backKeyboard().reply_markup,
       });
     }
-  }
+   }
 
-  if (/^\/start\b/.test(text)) {
-    state.awaitingEmail = false;
-    state.awaitingPin = false;
-    state.awaitingPinConfirm = false;
-    state.awaitingSwapAmount = false;
-    state.swapPair = null;
-  state.awaitingWithdrawAmount = false;
-   state.withdrawToken = null;
-   state.awaitingStakeAmount = false;
-   state.stakeToken = null;
-   state.buyToken = null;
-   state.sellToken = null;
-    state.currentView = null;
-    state.pendingAction = null;
-    state.selectedTrader = null;
-    return replyWithCachedPhoto(ctx, "welcome", {
-      caption: WELCOME_TEXT,
-      parse_mode: "Markdown",
-      reply_markup: welcomeKeyboard().reply_markup,
-    });
-  }
-
-  return handleMenuDashboard(ctx, state);
-});
+   return replyWithCachedPhoto(ctx, "dashboard", {
+     caption: DASHBOARD_TEXT(state),
+     parse_mode: "Markdown",
+     reply_markup: dashboardKeyboard(state).reply_markup,
+   });
+ });
 
 bot.catch((err, ctx) => {
   console.error(`Error for ${ctx?.update?.update_id}:`, err);
