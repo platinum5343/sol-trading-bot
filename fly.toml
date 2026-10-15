@@ -1,16 +1,35 @@
-app = "sol-trading-bot"
-primary_region = "iad"
+# fly.toml app configuration file generated for sol-trading-bot-8ey7tw on 2026-10-15T08:53:18Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'sol-trading-bot-8ey7tw'
+primary_region = 'ams'
 
 [build]
 
 [env]
-  NODE_ENV = "production"
+  NODE_ENV = 'production'
 
 [processes]
-  app = "node src/index.js"
+  app = 'node src/index.js'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
 
 [[services]]
+  protocol = 'tcp'
   internal_port = 8080
-  processes = ["app"]
-  protocol = "tcp"
-  http_checks = []
+  ports = []
+  processes = ['app']
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 256
