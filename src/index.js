@@ -17,6 +17,11 @@ const server = http.createServer((req, res) => {
     bot.webhookCallback("/webhook", "json")(req, res);
     return;
   }
+  if (req.method === "GET" && req.url === "/ping") {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("OK");
+    return;
+  }
   res.writeHead(200, { "Content-Type": "text/plain" });
   res.end("Bot is running");
 });
