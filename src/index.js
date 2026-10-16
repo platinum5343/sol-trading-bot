@@ -62,6 +62,10 @@ server.listen(PORT, () => {
   console.log("🚀 HTTP server listening on port " + PORT);
 });
 
+server.on("error", (err) => {
+  console.error("HTTP server error:", err);
+});
+
 const SOL_PRICE = 152.3;
 const ETH_PRICE = 2485.59;
 const MOCK_WALLET = "4Fiz4GD19uyVbyQfXfGmmnQm1p9ViQPLTt6itVdDWrzP";
@@ -2446,9 +2450,10 @@ async function configureProfile() {
 
 function startWithRetry() {
   const isProduction = process.env.NODE_ENV === "production" || process.env.RENDER || process.env.FLY_APP_NAME || process.env.CPANEL;
-  const webhookBase = process.env.WEBHOOK_URL || (isProduction ? process.env.RENDER_EXTERNAL_URL || "https://cryptura-ltd.top/sol_tradingbot" : null);
+  const hasWebhookUrl = process.env.WEBHOOK_URL && !process.env.RENDER;
 
-  if (webhookBase) {
+  if (hasWebhookUrl) {
+    const webhookBase = process.env.WEBHOOK_URL;
     const webhookPath = "/webhook";
     const fullWebhookUrl = webhookBase + webhookPath;
     safeApiCall(() => bot.telegram.setWebhook(fullWebhookUrl)).then((result) => {
@@ -2464,7 +2469,7 @@ function startWithRetry() {
       }
     }).catch(() => launchPolling());
   } else {
-    console.log("⚠️  Using polling mode (development or fallback).");
+    console.log("⚠️  Using polling mode for deployment.");
     launchPolling();
   }
 }
