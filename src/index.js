@@ -142,9 +142,14 @@ async function replyWithCachedPhoto(ctx, key, extra) {
 }
 
 async function sendPhotoCached(chatId, key, extra) {
-  const res = await bot.telegram.sendPhoto(chatId, mediaForChat(chatId, key), extra);
-  captureFileId(chatId, key, res);
-  return res;
+  try {
+    const res = await bot.telegram.sendPhoto(chatId, mediaForChat(chatId, key), extra);
+    captureFileId(chatId, key, res);
+    return res;
+  } catch (err) {
+    console.error(`⚠️  Failed to send photo (${key}) to chat ${chatId}:`, err?.message || err);
+    return null;
+  }
 }
 
 async function deleteUserMessage(ctx) {
@@ -2365,7 +2370,10 @@ bot.on("text", async (ctx) => {
  });
 
 bot.catch((err, ctx) => {
-  console.error(`Error for ${ctx?.update?.update_id}:`, err);
+  console.error(`Error for ${ctx?.update?.update_id}:`, err?.message || err);
+  if (ctx?.chat?.id) {
+    ctx.reply("Sorry, I encountered an error processing your request. Please try again.").catch(e => console.error("Fallback reply failed:", e?.message));
+  }
 });
 
 const BOT_PROFILE_NAME = "Sol Trading Bot";
