@@ -133,6 +133,10 @@ async function replyWithCachedPhoto(ctx, key, extra) {
   const parseMode = extra?.parse_mode || "Markdown";
   const replyMarkup = extra?.reply_markup;
   
+  if (process.env.RENDER || process.env.NODE_ENV === "production") {
+    return ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
+  }
+  
   try {
     const res = await ctx.replyWithPhoto(mediaFor(ctx, key), extra);
     captureFileId(ctx?.chat?.id ?? 0, key, res);
