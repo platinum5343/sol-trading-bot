@@ -16,18 +16,31 @@ const startupInfo = { mode: "starting", timestamp: new Date().toISOString() };
 
 const server = http.createServer((req, res) => {
   if (req.method === "POST" && (req.url === "/webhook" || req.url === "/sol_tradingbot/webhook")) {
-    console.log("🔔 Webhook received: " + req.url);
+    console.log("🔔 Webhook received: " + req.url + " at " + new Date().toISOString());
     let body = "";
-    req.on("data", chunk => { body += chunk; });
+    req.on("data", chunk => { body += chunk.toString(); });
     req.on("end", () => {
       try {
+        console.log("Webhook body length:", body.length);
         const update = JSON.parse(body);
-        bot.handleUpdate(update, res);
+        console.log("Processing update_id:", update?.update_id);
+        bot.handleUpdate(update, res).catch(e => {
+          console.error("handleUpdate error:", e?.message || e);
+          if (!res.headersSent) {
+            res.writeHead(200);
+            res.end();
+          }
+        });
       } catch (e) {
         console.error("Webhook parse error:", e);
         res.writeHead(200);
         res.end();
       }
+    });
+    req.on("error", (e) => {
+      console.error("Webhook request error:", e);
+      res.writeHead(200);
+      res.end();
     });
     return;
   }
