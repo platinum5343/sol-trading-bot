@@ -12,15 +12,17 @@ if (!TOKEN) {
 
 const bot = new Telegraf(TOKEN);
 
+const startupInfo = { mode: "starting", timestamp: new Date().toISOString() };
+
 const server = http.createServer((req, res) => {
-  console.log(`${req.method} ${req.url}`);
   if (req.method === "POST" && (req.url === "/webhook" || req.url === "/sol_tradingbot/webhook")) {
+    console.log("🔔 Webhook received: " + req.url);
     bot.webhookCallback("/webhook", "json")(req, res);
     return;
   }
   if (req.method === "GET" && req.url === "/ping") {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ status: "ok", mode: process.env.NODE_ENV || "development", time: new Date().toISOString() }));
+    res.end(JSON.stringify({ status: "ok", mode: startupInfo.mode, time: new Date().toISOString() }));
     return;
   }
   res.writeHead(200, { "Content-Type": "text/plain" });
@@ -2417,6 +2419,8 @@ function startWithRetry() {
     const fullWebhookUrl = webhookBase + webhookPath;
     safeApiCall(() => bot.telegram.setWebhook(fullWebhookUrl)).then((result) => {
       if (result) {
+        startupInfo.mode = "webhook";
+        startupInfo.webhookUrl = fullWebhookUrl;
         console.log("🚀 Bot started with webhook mode!");
         console.log("🔗 Webhook URL: " + fullWebhookUrl);
         configureProfile().catch(e => console.error("Profile config failed:", e?.message));
@@ -2439,6 +2443,7 @@ function isConflict(err) {
 }
 
 function launchPolling() {
+  startupInfo.mode = "polling";
   bot.launch({ dropPendingUpdates: true }, () => {
     retryCount = 0;
     console.log("🚀 Bot is online with polling!");
