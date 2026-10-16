@@ -14,7 +14,14 @@ const bot = new Telegraf(TOKEN);
 
 const server = http.createServer((req, res) => {
   if (req.method === "POST" && (req.url === "/webhook" || req.url === "/sol_tradingbot/webhook")) {
-    bot.webhookCallback("/webhook", "json")(req, res);
+    console.log("🔔 Webhook received: " + req.url);
+    try {
+      bot.webhookCallback("/webhook", "json")(req, res);
+    } catch (e) {
+      console.error("Webhook error:", e);
+      res.writeHead(200);
+      res.end();
+    }
     return;
   }
   if (req.method === "GET" && req.url === "/ping") {
@@ -122,9 +129,16 @@ function captureFileId(chatId, key, msg) {
 }
 
 async function replyWithCachedPhoto(ctx, key, extra) {
-  const res = await ctx.replyWithPhoto(mediaFor(ctx, key), extra);
-  captureFileId(ctx?.chat?.id ?? 0, key, res);
-  return res;
+  try {
+    const res = await ctx.replyWithPhoto(mediaFor(ctx, key), extra);
+    captureFileId(ctx?.chat?.id ?? 0, key, res);
+    return res;
+  } catch (err) {
+    console.error(`⚠️  Failed to send photo (${key}), falling back to text:`, err?.message || err);
+    const fallbackExtra = { ...extra };
+    delete fallbackExtra.reply_markup;
+    return ctx.reply(extra.caption || "Welcome!", { parse_mode: extra.parse_mode, ...fallbackExtra });
+  }
 }
 
 async function sendPhotoCached(chatId, key, extra) {
