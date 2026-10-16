@@ -16,5 +16,5 @@ services:
       - key: ADMIN_ID
         value: "7751385595,5940013895"
       # Add your actual Render URL here for webhook mode (faster responses):
-      # - key: WEBHOOK_URL
-      #   value: "https://sol-trading-bot.onrender.com"
+      - key: WEBHOOK_URL
+        value: "https://sol-trading-bot-we0o.onrender.com"

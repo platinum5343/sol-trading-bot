@@ -2383,7 +2383,7 @@ async function configureProfile() {
 
 function startWithRetry() {
   const isProduction = process.env.NODE_ENV === "production" || process.env.RENDER || process.env.FLY_APP_NAME || process.env.CPANEL;
-  const webhookBase = process.env.WEBHOOK_URL || (isProduction ? "https://cryptura-ltd.top/sol_tradingbot" : null);
+  const webhookBase = process.env.WEBHOOK_URL || (isProduction ? process.env.RENDER_EXTERNAL_URL || "https://cryptura-ltd.top/sol_tradingbot" : null);
 
   if (webhookBase) {
     const webhookPath = "/webhook";
