@@ -19,8 +19,8 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (req.method === "GET" && req.url === "/ping") {
-    res.writeHead(200, { "Content-Type": "text/plain" });
-    res.end("OK");
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ status: "ok", mode: process.env.NODE_ENV || "development", time: new Date().toISOString() }));
     return;
   }
   res.writeHead(200, { "Content-Type": "text/plain" });
