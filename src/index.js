@@ -135,9 +135,12 @@ async function replyWithCachedPhoto(ctx, key, extra) {
     return res;
   } catch (err) {
     console.error(`⚠️  Failed to send photo (${key}), falling back to text:`, err?.message || err);
-    const fallbackExtra = { ...extra };
-    delete fallbackExtra.reply_markup;
-    return ctx.reply(extra.caption || "Welcome!", { parse_mode: extra.parse_mode, ...fallbackExtra });
+    try {
+      return await ctx.reply(extra.caption || "Welcome!", { parse_mode: extra.parse_mode });
+    } catch (fallbackErr) {
+      console.error("Fallback text also failed:", fallbackErr?.message || fallbackErr);
+      return null;
+    }
   }
 }
 
