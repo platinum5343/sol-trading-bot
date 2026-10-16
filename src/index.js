@@ -129,6 +129,10 @@ function captureFileId(chatId, key, msg) {
 }
 
 async function replyWithCachedPhoto(ctx, key, extra) {
+  const caption = extra?.caption || "Welcome!";
+  const parseMode = extra?.parse_mode || "Markdown";
+  const replyMarkup = extra?.reply_markup;
+  
   try {
     const res = await ctx.replyWithPhoto(mediaFor(ctx, key), extra);
     captureFileId(ctx?.chat?.id ?? 0, key, res);
@@ -136,7 +140,7 @@ async function replyWithCachedPhoto(ctx, key, extra) {
   } catch (err) {
     console.error(`⚠️  Failed to send photo (${key}), falling back to text:`, err?.message || err);
     try {
-      return await ctx.reply(extra.caption || "Welcome!", { parse_mode: extra.parse_mode });
+      return await ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
     } catch (fallbackErr) {
       console.error("Fallback text also failed:", fallbackErr?.message || fallbackErr);
       return null;
