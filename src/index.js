@@ -12,6 +12,19 @@ if (!TOKEN) {
 
 const bot = new Telegraf(TOKEN);
 
+const server = http.createServer((req, res) => {
+  if (req.method === "POST" && (req.url === "/webhook" || req.url === "/sol_tradingbot/webhook")) {
+    bot.webhookCallback("/webhook", "json")(req, res);
+    return;
+  }
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("Bot is running");
+});
+
+server.listen(PORT, () => {
+  console.log("🚀 HTTP server listening on port " + PORT);
+});
+
 const SOL_PRICE = 152.3;
 const ETH_PRICE = 2485.59;
 const MOCK_WALLET = "4Fiz4GD19uyVbyQfXfGmmnQm1p9ViQPLTt6itVdDWrzP";
@@ -2340,15 +2353,16 @@ const BOT_PROFILE_NAME = "Sol Trading Bot";
 const BOT_SHARE_DESCRIPTION = "you can contact @soltrading_helper_bot right away.";
 
 const safeApiCall = async (fn, retries = 2, delay = 5000) => {
+  const maxDelay = 60000;
   try {
     return await fn();
   } catch (err) {
     if (err.message && err.message.includes("429") && retries > 0) {
       const match = err.message.match(/retry after (\d+)/i);
-      const waitMs = match ? parseInt(match[1]) * 1000 : delay;
+      const waitMs = Math.min(match ? parseInt(match[1]) * 1000 : delay, maxDelay);
       console.log(`Rate limited. Waiting ${waitMs}ms before retry (${retries} left)...`);
       await new Promise(r => setTimeout(r, waitMs));
-      return safeApiCall(fn, retries - 1, delay * 2);
+      return safeApiCall(fn, retries - 1, delay);
     }
     console.error("⚠️  API call failed:", err?.message || err);
     return null;
@@ -2356,29 +2370,31 @@ const safeApiCall = async (fn, retries = 2, delay = 5000) => {
 };
 
 async function configureProfile() {
-  await safeApiCall(() => bot.telegram.setMyName(BOT_PROFILE_NAME));
-  await safeApiCall(() => bot.telegram.setMyShortDescription(BOT_SHARE_DESCRIPTION));
+  const maxDelay = 60000;
+  await safeApiCall(() => bot.telegram.setMyName(BOT_PROFILE_NAME), 2, maxDelay);
+  await safeApiCall(() => bot.telegram.setMyShortDescription(BOT_SHARE_DESCRIPTION), 2, maxDelay);
   console.log("✅ Bot profile configured for rich link previews.");
 }
 
 function startWithRetry() {
   const isProduction = process.env.NODE_ENV === "production" || process.env.RENDER || process.env.FLY_APP_NAME || process.env.CPANEL;
-  if (isProduction && process.env.WEBHOOK_URL) {
-    const webhookUrl = process.env.WEBHOOK_URL;
-    safeApiCall(() => bot.telegram.setWebhook(webhookUrl + "/webhook")).then((result) => {
+  const webhookBase = process.env.WEBHOOK_URL || (isProduction ? "https://cryptura-ltd.top/sol_tradingbot" : null);
+
+  if (webhookBase) {
+    const webhookPath = "/webhook";
+    const fullWebhookUrl = webhookBase + webhookPath;
+    safeApiCall(() => bot.telegram.setWebhook(fullWebhookUrl)).then((result) => {
       if (result) {
-        const server = http.createServer(bot.webhookCallback("/webhook", "json"));
-        server.listen(PORT, () => {
-          console.log("🚀 Bot started with webhook mode on port " + PORT + "!");
-          configureProfile();
-        });
+        console.log("🚀 Bot started with webhook mode!");
+        console.log("🔗 Webhook URL: " + fullWebhookUrl);
+        configureProfile().catch(e => console.error("Profile config failed:", e?.message));
       } else {
         console.log("⚠️  Webhook setup failed, falling back to polling.");
         launchPolling();
       }
     }).catch(() => launchPolling());
   } else {
-    console.log("⚠️  Using polling mode for cPanel/shared hosting.");
+    console.log("⚠️  Using polling mode (development or fallback).");
     launchPolling();
   }
 }
