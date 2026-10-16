@@ -13,15 +13,9 @@ if (!TOKEN) {
 const bot = new Telegraf(TOKEN);
 
 const server = http.createServer((req, res) => {
+  console.log(`${req.method} ${req.url}`);
   if (req.method === "POST" && (req.url === "/webhook" || req.url === "/sol_tradingbot/webhook")) {
-    console.log("🔔 Webhook received: " + req.url);
-    try {
-      bot.webhookCallback("/webhook", "json")(req, res);
-    } catch (e) {
-      console.error("Webhook error:", e);
-      res.writeHead(200);
-      res.end();
-    }
+    bot.webhookCallback("/webhook", "json")(req, res);
     return;
   }
   if (req.method === "GET" && req.url === "/ping") {
