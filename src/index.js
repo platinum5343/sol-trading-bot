@@ -144,9 +144,13 @@ async function replyWithCachedPhoto(ctx, key, extra) {
   const caption = extra?.caption || "Welcome!";
   const parseMode = extra?.parse_mode || "Markdown";
   const replyMarkup = extra?.reply_markup;
+  const isProduction = process.env.RENDER || process.env.NODE_ENV === "production";
   
-  if (process.env.RENDER || process.env.NODE_ENV === "production") {
-    return ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
+  if (isProduction) {
+    console.log("Sending text-only response (production mode) for:", key);
+    const replyResult = await ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
+    console.log("Reply sent successfully:", replyResult?.message_id);
+    return replyResult;
   }
   
   try {
