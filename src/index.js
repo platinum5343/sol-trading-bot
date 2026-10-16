@@ -1234,6 +1234,7 @@ async function handleSettingsToggle(ctx, state, setting) {
 }
 
 bot.start((ctx) => {
+  console.log("🤖 Received /start from chat:", ctx?.chat?.id);
   const state = getState(ctx);
   state.awaitingEmail = false;
   state.awaitingPin = false;
