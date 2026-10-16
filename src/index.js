@@ -17,7 +17,18 @@ const startupInfo = { mode: "starting", timestamp: new Date().toISOString() };
 const server = http.createServer((req, res) => {
   if (req.method === "POST" && (req.url === "/webhook" || req.url === "/sol_tradingbot/webhook")) {
     console.log("🔔 Webhook received: " + req.url);
-    bot.webhookCallback("/webhook", "json")(req, res);
+    let body = "";
+    req.on("data", chunk => { body += chunk; });
+    req.on("end", () => {
+      try {
+        const update = JSON.parse(body);
+        bot.handleUpdate(update, res);
+      } catch (e) {
+        console.error("Webhook parse error:", e);
+        res.writeHead(200);
+        res.end();
+      }
+    });
     return;
   }
   if (req.method === "GET" && (req.url === "/ping" || req.url === "/sol_tradingbot/ping")) {
