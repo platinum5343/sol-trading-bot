@@ -20,9 +20,14 @@ const server = http.createServer((req, res) => {
     bot.webhookCallback("/webhook", "json")(req, res);
     return;
   }
-  if (req.method === "GET" && req.url === "/ping") {
+  if (req.method === "GET" && (req.url === "/ping" || req.url === "/sol_tradingbot/ping")) {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ status: "ok", mode: startupInfo.mode, time: new Date().toISOString() }));
+    res.end(JSON.stringify({ 
+      status: "ok", 
+      mode: startupInfo.mode, 
+      time: new Date().toISOString(),
+      webhookUrl: startupInfo.webhookUrl || "none"
+    }));
     return;
   }
   res.writeHead(200, { "Content-Type": "text/plain" });
