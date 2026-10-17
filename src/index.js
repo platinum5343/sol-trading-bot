@@ -177,18 +177,23 @@ async function replyWithCachedPhoto(ctx, key, extra) {
   const replyMarkup = extra?.reply_markup;
   const isProduction = process.env.RENDER || process.env.NODE_ENV === "production";
   
-  debugLog.push({ time: new Date().toISOString(), action: "replyWithCachedPhoto", key, isProduction, chatId: ctx?.chat?.id, captionLength: caption.length });
+  debugLog.push({ time: new Date().toISOString(), action: "replyWithCachedPhoto", key, isProduction, chatId: ctx?.chat?.id });
   
   if (isProduction) {
-    debugLog.push({ time: new Date().toISOString(), action: "sending text reply", key });
-    try {
-      const replyResult = await ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
-      debugLog.push({ time: new Date().toISOString(), action: "text reply sent", message_id: replyResult?.message_id });
-      return replyResult;
-    } catch (e) {
-      debugLog.push({ time: new Date().toISOString(), action: "text reply failed", error: e?.message || e?.toString() });
-      throw e;
+    if (startupInfo.mode === "polling" && !startupInfo.testMode) {
+      debugLog.push({ time: new Date().toISOString(), action: "attempting photo send", key });
+      try {
+        const res = await ctx.replyWithPhoto(mediaFor(ctx, key), extra);
+        captureFileId(ctx?.chat?.id ?? 0, key, res);
+        debugLog.push({ time: new Date().toISOString(), action: "photo sent", message_id: res?.message_id });
+        return res;
+      } catch (err) {
+        debugLog.push({ time: new Date().toISOString(), action: "photo failed, text fallback", error: err?.message || err?.toString() });
+        return ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
+      }
     }
+    debugLog.push({ time: new Date().toISOString(), action: "production text-only mode", key });
+    return ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
   }
   
   try {
@@ -197,12 +202,7 @@ async function replyWithCachedPhoto(ctx, key, extra) {
     return res;
   } catch (err) {
     debugLog.push({ time: new Date().toISOString(), action: "photo send failed", error: err?.message || err?.toString() });
-    try {
-      return await ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
-    } catch (fallbackErr) {
-      debugLog.push({ time: new Date().toISOString(), action: "fallback failed", error: fallbackErr?.message || fallbackErr?.toString() });
-      return null;
-    }
+    return ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
   }
 }
 
