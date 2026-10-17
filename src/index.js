@@ -225,7 +225,9 @@ async function replyWithCachedPhoto(ctx, key, extra) {
       return res;
     } catch (err) {
       debugLog.push({ time: new Date().toISOString(), action: "photo failed, text fallback (production)", error: err?.message || err?.toString() });
-      return ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
+      const textRes = await ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
+      debugLog.push({ time: new Date().toISOString(), action: "text reply sent (production)", message_id: textRes?.message_id });
+      return textRes;
     }
   }
 
@@ -236,8 +238,10 @@ async function replyWithCachedPhoto(ctx, key, extra) {
     debugLog.push({ time: new Date().toISOString(), action: "photo sent", message_id: res?.message_id });
     return res;
   } catch (err) {
-    debugLog.push({ time: new Date().toISOString(), action: "photo failed, text fallback", error: err?.message || err?.toString() });
-    return ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
+     debugLog.push({ time: new Date().toISOString(), action: "photo failed, text fallback", error: err?.message || err?.toString() });
+    const textRes = await ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
+    debugLog.push({ time: new Date().toISOString(), action: "text reply sent", message_id: textRes?.message_id });
+    return textRes;
   }
 }
 
