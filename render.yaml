@@ -10,7 +10,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: HTTP_API_TOKEN
-        value: "8876375896:AAHqJZJaxoldHlEQRUEvODCxantr3BgP5kw"
+        value: "YOUR_TELEGRAM_BOT_TOKEN_HERE"
       - key: BOT_USERNAME
         value: "soltrading_helper_bot"
       - key: ADMIN_ID
