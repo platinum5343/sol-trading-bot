@@ -1272,15 +1272,16 @@ async function handleStakeToken(ctx, state, token) {
 
 async function handleDashCopy(ctx, state) {
   state.currentView = "copy_trade";
+  const allImageKeys = ["copytrader1", "copytrader2", "copytrader3", "copytrade4", "copytrade5", "copytrade6", "copytrade7", "copytrade8", "copytrade9", "copytrade10", "copytrade11"];
   const promises = MOCK_TRADERS.map((t, i) => {
     const traderName = t.name.replace(/@/g, "").replace(/_/g, "\\_");
     const caption =
       `👤 ${traderName}\n` +
       `${t.description}\n` +
       `📊 Performance: ${t.performance}\n` +
-      `💰 Min: ${t.min} (${t.minSol} / ${t.minSol.replace("≈", "≈")} ${t.minEth})\n` +
+      `💰 Min: ${t.min} (${t.minSol} / ${t.minEth})\n` +
       `💰 Max: ${t.max} (${t.maxSol} / ${t.maxEth})`;
-    const imageKey = t.image || `copytrader${(i % 3) + 1}`;
+    const imageKey = allImageKeys[i % allImageKeys.length];
     return replyWithCachedPhoto(ctx, imageKey, {
       caption: caption,
       parse_mode: "Markdown",
@@ -1299,9 +1300,11 @@ async function handleDashCopy(ctx, state) {
 async function handleCopyTrader(ctx, state, traderId) {
   const trader = MOCK_TRADERS.find((t) => t.id === traderId);
   if (!trader) return;
+  const traderIndex = MOCK_TRADERS.findIndex((t) => t.id === traderId);
+  const allImageKeys = ["copytrader1", "copytrader2", "copytrader3", "copytrade4", "copytrade5", "copytrade6", "copytrade7", "copytrade8", "copytrade9", "copytrade10", "copytrade11"];
+  const imageKey = allImageKeys[traderIndex % allImageKeys.length];
   state.currentView = "trader_detail";
   state.selectedTrader = traderId;
-  const imageKey = trader.image || "copytrader1";
   return replyWithCachedPhoto(ctx, imageKey, {
     caption:
       `👥 *${trader.name.replace(/@_$/g, "").replace(/_/g, "\\_")}*\n\n` +
@@ -1317,6 +1320,9 @@ async function handleCopyTrader(ctx, state, traderId) {
 async function handleCopyConfirm(ctx, state, traderId) {
   const trader = MOCK_TRADERS.find((t) => t.id === traderId);
   if (!trader) return;
+  const traderIndex = MOCK_TRADERS.findIndex((t) => t.id === traderId);
+  const allImageKeys = ["copytrader1", "copytrader2", "copytrader3", "copytrade4", "copytrade5", "copytrade6", "copytrade7", "copytrade8", "copytrade9", "copytrade10", "copytrade11"];
+  const imageKey = allImageKeys[traderIndex % allImageKeys.length];
   state.currentView = "copy_confirm";
   state.copyTrades.push({
     traderId: trader.id,
@@ -1327,8 +1333,7 @@ async function handleCopyConfirm(ctx, state, traderId) {
   });
   state.selectedTrader = null;
   syncState(state);
-  const chartKey = trader.chart || "copytrade4";
-  return replyWithCachedPhoto(ctx, chartKey, {
+  return replyWithCachedPhoto(ctx, imageKey, {
     caption:
       "✅ *Trade Copied!*\n\n" +
       `📊 *Following: ${trader.name.replace(/@_$/g, "").replace(/_/g, "\\_")}*\n` +
