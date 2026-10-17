@@ -128,6 +128,7 @@ const MOCK_TRADERS = [
 ];
 
 const MEDIA_BASE = path.resolve(__dirname);
+const MEDIA_GITHUB_BASE = "https://raw.githubusercontent.com/platinum5343/sol-trading-bot/main/src";
 const MEDIA_PATHS = {
   welcome: `${MEDIA_BASE}/images1.mp4`,
   network: `${MEDIA_BASE}/photo_3.jpg`,
@@ -151,18 +152,51 @@ const MEDIA_PATHS = {
   main: `${MEDIA_BASE}/photo_4.jpg`,
   signal: `${MEDIA_BASE}/photo_3.jpg`,
 };
+const MEDIA_URLS = {
+  welcome: `${MEDIA_GITHUB_BASE}/images1.mp4`,
+  network: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
+  wallet: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
+  security: `${MEDIA_GITHUB_BASE}/images1.mp4`,
+  email: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
+  pin: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
+  dashboard: `${MEDIA_GITHUB_BASE}/images1.mp4`,
+  buy: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
+  sell: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
+  balance: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
+  portfolio: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
+  deposit: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
+  swap: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
+  withdraw: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
+  stake: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
+  copy: `${MEDIA_GITHUB_BASE}/images1.mp4`,
+  dca: `${MEDIA_GITHUB_BASE}/images1.mp4`,
+  alerts: `${MEDIA_GITHUB_BASE}/images1.mp4`,
+  settings: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
+  main: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
+  signal: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
+};
 
 const mediaCache = new Map();
+
+const isProd = process.env.RENDER || process.env.NODE_ENV === "production";
 
 function mediaFor(ctx, key) {
   const chatId = ctx?.chat?.id ?? 0;
   const cached = mediaCache.get(chatId)?.get(key);
-  return cached ?? Input.fromLocalFile(MEDIA_PATHS[key]);
+  if (cached) return cached;
+  if (isProd) {
+    return Input.fromURL(MEDIA_URLS[key]);
+  }
+  return Input.fromLocalFile(MEDIA_PATHS[key]);
 }
 
 function mediaForChat(chatId, key) {
   const cached = mediaCache.get(chatId)?.get(key);
-  return cached ?? Input.fromLocalFile(MEDIA_PATHS[key]);
+  if (cached) return cached;
+  if (isProd) {
+    return Input.fromURL(MEDIA_URLS[key]);
+  }
+  return Input.fromLocalFile(MEDIA_PATHS[key]);
 }
 
 function captureFileId(chatId, key, msg) {
