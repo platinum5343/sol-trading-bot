@@ -183,8 +183,16 @@ async function replyWithCachedPhoto(ctx, key, extra) {
   debugLog.push({ time: new Date().toISOString(), action: "replyWithCachedPhoto", key, isProduction, chatId: ctx?.chat?.id });
 
   if (isProduction) {
-    debugLog.push({ time: new Date().toISOString(), action: "production mode - skipping photo, sending text only", key });
-    return ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
+    debugLog.push({ time: new Date().toISOString(), action: "attempting photo send (production)", key });
+    try {
+      const res = await ctx.replyWithPhoto(mediaFor(ctx, key), extra);
+      captureFileId(ctx?.chat?.id ?? 0, key, res);
+      debugLog.push({ time: new Date().toISOString(), action: "photo sent (production)", message_id: res?.message_id });
+      return res;
+    } catch (err) {
+      debugLog.push({ time: new Date().toISOString(), action: "photo failed, text fallback (production)", error: err?.message || err?.toString() });
+      return ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
+    }
   }
 
   debugLog.push({ time: new Date().toISOString(), action: "attempting photo send", key });
@@ -200,13 +208,24 @@ async function replyWithCachedPhoto(ctx, key, extra) {
 }
 
 async function sendPhotoCached(chatId, key, extra) {
+  const caption = extra?.caption || "Welcome!";
+  const parseMode = extra?.parse_mode || "Markdown";
+  const replyMarkup = extra?.reply_markup;
   try {
     const res = await bot.telegram.sendPhoto(chatId, mediaForChat(chatId, key), extra);
     captureFileId(chatId, key, res);
+    debugLog.push({ time: new Date().toISOString(), action: "photo sent (sendPhotoCached)", message_id: res?.message_id, key, chatId });
     return res;
   } catch (err) {
+    debugLog.push({ time: new Date().toISOString(), action: "photo failed, text fallback (sendPhotoCached)", error: err?.message || err?.toString(), key, chatId });
     console.error(`⚠️  Failed to send photo (${key}) to chat ${chatId}:`, err?.message || err);
-    return null;
+    try {
+      return await bot.telegram.sendMessage(chatId, caption, { parse_mode: parseMode, reply_markup: replyMarkup });
+    } catch (err2) {
+      console.error(`⚠️  Also failed to send text message (${key}) to chat ${chatId}:`, err2?.message || err2);
+      debugLog.push({ time: new Date().toISOString(), action: "text fallback also failed", error: err2?.message || err2?.toString(), key, chatId });
+      return null;
+    }
   }
 }
 
