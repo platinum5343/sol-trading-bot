@@ -2483,10 +2483,16 @@ function isConflict(err) {
 
 function launchPolling() {
   startupInfo.mode = "polling";
-  bot.launch({ dropPendingUpdates: true }, () => {
-    retryCount = 0;
-    console.log("🚀 Bot is online with polling!");
-  });
+  try {
+    bot.launch({ dropPendingUpdates: true }, () => {
+      retryCount = 0;
+      console.log("🚀 Bot is online with polling!");
+    });
+  } catch (e) {
+    console.error("Bot launch failed:", e?.message || e);
+    setTimeout(launchPolling, RETRY_DELAY_MS);
+    return;
+  }
   bot.catch((err) => {
     if (isConflict(err) && retryCount < MAX_RETRIES) {
       retryCount++;
