@@ -104,7 +104,6 @@ const MOCK_TRADERS = [
     maxSol: "≈ 9,532.06710374 SOL",
     maxEth: "≈ 410.24847298 ETH",
     image: "copytrader1",
-    chart: "copytrade4",
     timeframe: "24h",
   },
   {
@@ -121,7 +120,6 @@ const MOCK_TRADERS = [
     maxSol: "≈ 6,540.04049364 SOL",
     maxEth: "≈ 281.47531868 ETH",
     image: "copytrader2",
-    chart: "copytrade5",
     timeframe: "12h",
   },
   {
@@ -138,7 +136,6 @@ const MOCK_TRADERS = [
     maxSol: "≈ 96.41342075 SOL",
     maxEth: "≈ 4.14951534 ETH",
     image: "copytrader3",
-    chart: "copytrade6",
     timeframe: "5m",
   },
   {
@@ -154,8 +151,7 @@ const MOCK_TRADERS = [
     max: "$28,200.00",
     maxSol: "≈ 271.88584651 SOL",
     maxEth: "≈ 11.70163325 ETH",
-    image: "copytrader1",
-    chart: "copytrade7",
+    image: "copytrade4",
     timeframe: "3h",
   },
   {
@@ -171,8 +167,7 @@ const MOCK_TRADERS = [
     max: "$100,000.00",
     maxSol: "≈ 964.13420748 SOL",
     maxEth: "≈ 41.49515337 ETH",
-    image: "copytrader2",
-    chart: "copytrade8",
+    image: "copytrade5",
     timeframe: "1h",
   },
   {
@@ -188,8 +183,7 @@ const MOCK_TRADERS = [
     max: "$100,000.00",
     maxSol: "≈ 964.13420748 SOL",
     maxEth: "≈ 41.49515337 ETH",
-    image: "copytrader3",
-    chart: "copytrade9",
+    image: "copytrade6",
     timeframe: "24h",
   },
   {
@@ -205,8 +199,7 @@ const MOCK_TRADERS = [
     max: "$100,000.00",
     maxSol: "≈ 964.13420748 SOL",
     maxEth: "≈ 41.49515337 ETH",
-    image: "copytrader1",
-    chart: "copytrade10",
+    image: "copytrade7",
     timeframe: "24h",
   },
   {
@@ -222,8 +215,7 @@ const MOCK_TRADERS = [
     max: "$1,000,000.00",
     maxSol: "≈ 9,641.34207482 SOL",
     maxEth: "≈ 414.95153366 ETH",
-    image: "copytrader2",
-    chart: "copytrade11",
+    image: "copytrade8",
     timeframe: "24h",
   },
   {
@@ -239,8 +231,7 @@ const MOCK_TRADERS = [
     max: "$1,000,000.00",
     maxSol: "≈ 9,641.34207482 SOL",
     maxEth: "≈ 414.95153366 ETH",
-    image: "copytrader3",
-    chart: "copytrade4",
+    image: "copytrade9",
     timeframe: "24h",
   },
   {
@@ -256,8 +247,7 @@ const MOCK_TRADERS = [
     max: "$1,000,000.00",
     maxSol: "≈ 9,641.34207482 SOL",
     maxEth: "≈ 414.95153366 ETH",
-    image: "copytrader1",
-    chart: "copytrade5",
+    image: "copytrade10",
     timeframe: "24h",
   },
   {
@@ -273,8 +263,7 @@ const MOCK_TRADERS = [
     max: "$100,000.00",
     maxSol: "≈ 964.13420748 SOL",
     maxEth: "≈ 41.49515337 ETH",
-    image: "copytrader2",
-    chart: "copytrade6",
+    image: "copytrade11",
     timeframe: "24h",
   },
 ];
@@ -961,7 +950,7 @@ async function handleBuyAmount(ctx, state, amount) {
       `💵 Purchased: $${usd.toFixed(2)} ${currency}\n` +
       `💰 Received: ${bought.toFixed(6)} ${currency}\n` +
       `Price: $${price.toFixed(2)} / ${currency}\n\n` +
-      "✅ *Order executed (simulated)*\n" +
+      "✅ *Order executed*\n" +
       (token === "eth"
         ? `New ETH balance: ${state.ethBalance.toFixed(6)} ETH\n`
         : `New SOL balance: ${state.solBalance.toFixed(4)} SOL`),
@@ -1017,7 +1006,7 @@ async function handleSellPct(ctx, state, pctStr) {
       `💰 Amount: ${sellAmount.toFixed(6)} ${currency}\n` +
       `💵 Proceeds: ~$${proceeds.toFixed(2)} USDC\n` +
       `Price: $${price.toFixed(2)} / ${currency}\n\n` +
-      "✅ *Order executed (simulated)*\n" +
+      "✅ *Order executed*\n" +
       (token === "eth"
         ? `💎 Remaining ETH balance: ${state.ethBalance.toFixed(6)} ETH`
         : `💎 Remaining SOL balance: ${state.solBalance.toFixed(4)} SOL`),
@@ -1266,7 +1255,7 @@ async function handleCopyConfirm(ctx, state, traderId) {
     `📊 *Following: ${trader.name.replace(/@_$/g, "").replace(/_/g, "\\_")}*\n` +
     `📈 Performance: ${trader.performance}\n\n` +
     `_You are now copying ${trader.name.replace(/@_$/g, "").replace(/_/g, "\\_")}'s trades._\n\n` +
-    `_Copy trading is simulated in this mock._\n\n` +
+
     `💼 *Your Balance*\n` +
     `   • SOL: $${solUsd.toFixed(2)}\n` +
     `   • ETH: $${ethUsd.toFixed(2)}\n` +
@@ -1319,7 +1308,7 @@ async function handleCopyAmount(ctx, state, amount) {
       `💵 Purchased: $${usd.toFixed(2)} SOL\n` +
       `💰 Received: ${bought.toFixed(6)} SOL\n` +
       `Price: $${SOL_PRICE.toFixed(2)} / SOL\n\n` +
-      `✅ *Order executed (simulated)*\n` +
+      `✅ *Order executed*\n` +
       `New SOL balance: ${state.solBalance.toFixed(6)} SOL`,
     parse_mode: "Markdown",
     reply_markup: backKeyboard().reply_markup,
@@ -2512,18 +2501,17 @@ bot.on("text", async (ctx) => {
       });
       syncState(state);
       return replyWithCachedPhoto(ctx, "swap", {
-         caption:
-           "✅ *Swap Successful (Mock)*\n\n" +
-           `🔄 Swapped $${amount.toFixed(2)} USD of SOL → ETH\n` +
-           `💵 SOL balance: ${(state.solBalance * SOL_PRICE).toFixed(2)}\n` +
-           `💵 ETH balance: ${(state.ethBalance * ETH_PRICE).toFixed(2)} (est.)\n\n` +
-           "_Swap is simulated in this mock._",
+        caption:
+          "✅ *Swap Successful (Mock)*\n\n" +
+          `🔄 Swapped $${amount.toFixed(2)} USD of SOL → ETH\n` +
+          `💵 SOL balance: ${(state.solBalance * SOL_PRICE).toFixed(2)}\n` +
+          `💵 ETH balance: ${(state.ethBalance * ETH_PRICE).toFixed(2)} (est.)\n\n`,
         parse_mode: "Markdown",
         reply_markup: backKeyboard().reply_markup,
       });
     }
     if (state.swapPair === "eth-sol") {
-      const ethUsd = 0;
+    const ethUsd = 0;
       if (amount > ethUsd) {
         return replyWithCachedPhoto(ctx, "swap", {
           caption:
@@ -2549,12 +2537,11 @@ bot.on("text", async (ctx) => {
       });
       syncState(state);
       return replyWithCachedPhoto(ctx, "swap", {
-         caption:
-           "✅ *Swap Successful (Mock)*\n\n" +
-           `🔄 Swapped $${amount.toFixed(2)} USD of ETH → SOL\n` +
-           `💵 ETH balance: ${(state.ethBalance * ETH_PRICE).toFixed(2)}\n` +
-           `💵 SOL balance: ${(state.solBalance * SOL_PRICE).toFixed(2)} (est.)\n\n` +
-           "_Swap is simulated in this mock._",
+        caption:
+          "✅ *Swap Successful (Mock)*\n\n" +
+          `🔄 Swapped $${amount.toFixed(2)} USD of ETH → SOL\n` +
+          `💵 ETH balance: ${(state.ethBalance * ETH_PRICE).toFixed(2)}\n` +
+          `💵 SOL balance: ${(state.solBalance * SOL_PRICE).toFixed(2)} (est.)\n\n`,
         parse_mode: "Markdown",
         reply_markup: backKeyboard().reply_markup,
       });
@@ -2596,11 +2583,10 @@ bot.on("text", async (ctx) => {
       });
       syncState(state);
       return replyWithCachedPhoto(ctx, "withdraw", {
-         caption:
-           "✅ *Withdraw Successful (Mock)*\n\n" +
-           `💸 Withdrew $${amount.toFixed(2)} USD to external wallet\n` +
-           `💵 Remaining SOL balance: $${(state.solBalance * SOL_PRICE).toFixed(2)}\n\n` +
-           "_Withdrawals are simulated in this mock._",
+        caption:
+          "✅ *Withdraw Successful (Mock)*\n\n" +
+          `💸 Withdrew $${amount.toFixed(2)} USD to external wallet\n` +
+          `💵 Remaining SOL balance: $${(state.solBalance * SOL_PRICE).toFixed(2)}\n\n`,
         parse_mode: "Markdown",
         reply_markup: backKeyboard().reply_markup,
       });
@@ -2629,11 +2615,10 @@ bot.on("text", async (ctx) => {
       });
       syncState(state);
       return replyWithCachedPhoto(ctx, "withdraw", {
-         caption:
-           "✅ *Withdraw Successful (Mock)*\n\n" +
-           `💸 Withdrew $${amount.toFixed(2)} USD to external wallet\n` +
-           `💵 Remaining ETH balance: $${(state.ethBalance * ETH_PRICE).toFixed(2)}\n\n` +
-           "_Withdrawals are simulated in this mock._",
+        caption:
+          "✅ *Withdraw Successful (Mock)*\n\n" +
+          `💸 Withdrew $${amount.toFixed(2)} USD to external wallet\n` +
+          `💵 Remaining ETH balance: $${(state.ethBalance * ETH_PRICE).toFixed(2)}\n\n`,
         parse_mode: "Markdown",
         reply_markup: backKeyboard().reply_markup,
       });
@@ -2683,8 +2668,7 @@ bot.on("text", async (ctx) => {
           "✅ *Stake Successful (Mock)*\n\n" +
           `💎 Staked $${amount.toFixed(2)} USD of SOL\n` +
           `💵 Remaining SOL balance: $${(state.solBalance * SOL_PRICE).toFixed(2)}\n` +
-          "🔒 Your staked SOL is locked for 7 days.\n\n" +
-          "_Staking is simulated in this mock._",
+          "🔒 Your staked SOL is locked for 7 days.\n\n",
         parse_mode: "Markdown",
         reply_markup: backKeyboard().reply_markup,
       });
@@ -2722,8 +2706,7 @@ bot.on("text", async (ctx) => {
           "✅ *Stake Successful (Mock)*\n\n" +
           `💎 Staked $${amount.toFixed(2)} USD of ETH\n` +
           `💵 Remaining ETH balance: $${(state.ethBalance * ETH_PRICE).toFixed(2)}\n` +
-          "🔒 Your staked ETH is locked for 7 days.\n\n" +
-          "_Staking is simulated in this mock._",
+          "🔒 Your staked ETH is locked for 7 days.\n\n",
         parse_mode: "Markdown",
         reply_markup: backKeyboard().reply_markup,
       });
