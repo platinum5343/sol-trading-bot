@@ -1239,6 +1239,7 @@ async function handleCopyTrader(ctx, state, traderId) {
 async function handleCopyConfirm(ctx, state, traderId) {
   const trader = MOCK_TRADERS.find((t) => t.id === traderId);
   if (!trader) return;
+  state.currentView = "copy_confirm";
   state.copyTrades.push({
     traderId: trader.id,
     traderName: trader.name,
@@ -1275,9 +1276,11 @@ async function handleCopyAmount(ctx, state, amount) {
   const solUsd = state.solBalance * SOL_PRICE;
   const ethUsd = state.ethBalance * ETH_PRICE;
   const total = solUsd + ethUsd;
+  const trader = MOCK_TRADERS.find((t) => t.id === state.selectedTrader);
 
   if (usd > total) {
-    return replyWithCachedPhoto(ctx, state.selectedTrader ? "copy" : "buy", {
+    state.currentView = "copy_confirm";
+    return replyWithCachedPhoto(ctx, "buy", {
       caption:
         "❌ *Insufficient balance.*\n\n" +
         "💵 Total available: $" + total.toFixed(2) + "\n" +
@@ -1292,8 +1295,15 @@ async function handleCopyAmount(ctx, state, amount) {
 
   const bought = usd / SOL_PRICE;
   state.solBalance += bought;
+  state.copyTrades.push({
+    traderId: trader?.id || state.selectedTrader,
+    traderName: trader?.name || "Unknown",
+    trade: { action: "BUY", token: "SOL", amount: usd, entry: SOL_PRICE, target: SOL_PRICE * 1.1, stopLoss: SOL_PRICE * 0.95 },
+    timeframe: trader?.timeframe || "24h",
+    timestamp: new Date().toISOString(),
+  });
   state.tradeHistory.push({
-    type: "buy",
+    type: "copy_trade",
     token: "SOL",
     amount: bought,
     usdValue: usd,
@@ -1301,6 +1311,7 @@ async function handleCopyAmount(ctx, state, amount) {
     timestamp: new Date().toISOString(),
   });
   syncState(state);
+  state.currentView = "copy_dashboard";
 
   return replyWithCachedPhoto(ctx, "buy", {
     caption:
@@ -2424,7 +2435,7 @@ bot.on("text", async (ctx) => {
      state.sellToken = null;
      state.currentView = null;
      state.pendingAction = null;
-     state.selectedTrader = null;
+     state.selectedTrader = traderId;
      return replyWithCachedPhoto(ctx, "welcome", {
        caption: WELCOME_TEXT,
        parse_mode: "Markdown",
