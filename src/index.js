@@ -1,6 +1,8 @@
 require("dotenv/config");
 const { Telegraf, Markup, Input } = require("telegraf");
 const http = require("http");
+const path = require("path");
+const fs = require("fs");
 const PORT = process.env.PORT || 8080;
 
 const TOKEN = process.env.HTTP_API_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
@@ -126,27 +128,27 @@ const MOCK_TRADERS = [
 ];
 
 const MEDIA_PATHS = {
-  welcome: "./src/images1.mp4",
-  network: "./src/photo_3.jpg",
-  wallet: "./src/photo_4.jpg",
-  security: "./src/images1.mp4",
-  email: "./src/photo_3.jpg",
-  pin: "./src/photo_4.jpg",
-  dashboard: "./src/images1.mp4",
-  buy: "./src/photo_3.jpg",
-  sell: "./src/photo_3.jpg",
-  balance: "./src/photo_4.jpg",
-  portfolio: "./src/photo_4.jpg",
-  deposit: "./src/photo_4.jpg",
-  swap: "./src/photo_3.jpg",
-  withdraw: "./src/photo_3.jpg",
-  stake: "./src/photo_4.jpg",
-  copy: "./src/images1.mp4",
-  dca: "./src/images1.mp4",
-  alerts: "./src/images1.mp4",
-  settings: "./src/photo_4.jpg",
-  main: "./src/photo_4.jpg",
-  signal: "./src/photo_3.jpg",
+  welcome: path.resolve(__dirname, "images1.mp4"),
+  network: path.resolve(__dirname, "photo_3.jpg"),
+  wallet: path.resolve(__dirname, "photo_4.jpg"),
+  security: path.resolve(__dirname, "images1.mp4"),
+  email: path.resolve(__dirname, "photo_3.jpg"),
+  pin: path.resolve(__dirname, "photo_4.jpg"),
+  dashboard: path.resolve(__dirname, "images1.mp4"),
+  buy: path.resolve(__dirname, "photo_3.jpg"),
+  sell: path.resolve(__dirname, "photo_3.jpg"),
+  balance: path.resolve(__dirname, "photo_4.jpg"),
+  portfolio: path.resolve(__dirname, "photo_4.jpg"),
+  deposit: path.resolve(__dirname, "photo_4.jpg"),
+  swap: path.resolve(__dirname, "photo_3.jpg"),
+  withdraw: path.resolve(__dirname, "photo_3.jpg"),
+  stake: path.resolve(__dirname, "photo_4.jpg"),
+  copy: path.resolve(__dirname, "images1.mp4"),
+  dca: path.resolve(__dirname, "images1.mp4"),
+  alerts: path.resolve(__dirname, "images1.mp4"),
+  settings: path.resolve(__dirname, "photo_4.jpg"),
+  main: path.resolve(__dirname, "photo_4.jpg"),
+  signal: path.resolve(__dirname, "photo_3.jpg"),
 };
 
 const mediaCache = new Map();
@@ -176,26 +178,21 @@ async function replyWithCachedPhoto(ctx, key, extra) {
   const parseMode = extra?.parse_mode || "Markdown";
   const replyMarkup = extra?.reply_markup;
   const isProduction = process.env.RENDER || process.env.NODE_ENV === "production";
-  
+
   debugLog.push({ time: new Date().toISOString(), action: "replyWithCachedPhoto", key, isProduction, chatId: ctx?.chat?.id });
-  
+
   if (isProduction) {
-    if (startupInfo.mode === "polling" && !startupInfo.testMode) {
-      debugLog.push({ time: new Date().toISOString(), action: "attempting photo send", key });
-      try {
-        const res = await ctx.replyWithPhoto(mediaFor(ctx, key), extra);
-        captureFileId(ctx?.chat?.id ?? 0, key, res);
-        debugLog.push({ time: new Date().toISOString(), action: "photo sent", message_id: res?.message_id });
-        return res;
-      } catch (err) {
-        debugLog.push({ time: new Date().toISOString(), action: "photo failed, text fallback", error: err?.message || err?.toString() });
-        return ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
-      }
+    debugLog.push({ time: new Date().toISOString(), action: "sending text reply", key });
+    try {
+      const replyResult = await ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
+      debugLog.push({ time: new Date().toISOString(), action: "text reply sent", message_id: replyResult?.message_id });
+      return replyResult;
+    } catch (e) {
+      debugLog.push({ time: new Date().toISOString(), action: "text reply failed", error: e?.message || e?.toString() });
+      throw e;
     }
-    debugLog.push({ time: new Date().toISOString(), action: "production text-only mode", key });
-    return ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
   }
-  
+
   try {
     const res = await ctx.replyWithPhoto(mediaFor(ctx, key), extra);
     captureFileId(ctx?.chat?.id ?? 0, key, res);
