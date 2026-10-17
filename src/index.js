@@ -157,12 +157,46 @@ const mediaCache = new Map();
 function mediaFor(ctx, key) {
   const chatId = ctx?.chat?.id ?? 0;
   const cached = mediaCache.get(chatId)?.get(key);
-  return cached ?? Input.fromLocalFile(MEDIA_PATHS[key]);
+  if (cached) return cached;
+  const filePath = MEDIA_PATHS[key];
+  if (process.env.RENDER || process.env.NODE_ENV === "production") {
+    try {
+      const data = fs.readFileSync(filePath);
+      const ext = path.extname(filePath).toLowerCase();
+      let contentType;
+      if (ext === ".mp4") contentType = "video/mp4";
+      else if (ext === ".jpg" || ext === ".jpeg") contentType = "image/jpeg";
+      else if (ext === ".png") contentType = "image/png";
+      else contentType = "application/octet-stream";
+      return Input.fromBuffer(data, contentType, path.basename(filePath));
+    } catch (e) {
+      console.error("Failed to read media file:", e?.message);
+      return Input.fromLocalFile(filePath);
+    }
+  }
+  return Input.fromLocalFile(filePath);
 }
 
 function mediaForChat(chatId, key) {
   const cached = mediaCache.get(chatId)?.get(key);
-  return cached ?? Input.fromLocalFile(MEDIA_PATHS[key]);
+  if (cached) return cached;
+  const filePath = MEDIA_PATHS[key];
+  if (process.env.RENDER || process.env.NODE_ENV === "production") {
+    try {
+      const data = fs.readFileSync(filePath);
+      const ext = path.extname(filePath).toLowerCase();
+      let contentType;
+      if (ext === ".mp4") contentType = "video/mp4";
+      else if (ext === ".jpg" || ext === ".jpeg") contentType = "image/jpeg";
+      else if (ext === ".png") contentType = "image/png";
+      else contentType = "application/octet-stream";
+      return Input.fromBuffer(data, contentType, path.basename(filePath));
+    } catch (e) {
+      console.error("Failed to read media file:", e?.message);
+      return Input.fromLocalFile(filePath);
+    }
+  }
+  return Input.fromLocalFile(filePath);
 }
 
 function captureFileId(chatId, key, msg) {
