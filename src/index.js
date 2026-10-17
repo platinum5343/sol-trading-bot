@@ -128,7 +128,7 @@ const MOCK_TRADERS = [
 ];
 
 const MEDIA_BASE = path.resolve(__dirname);
-const MEDIA_GITHUB_BASE = "https://raw.githubusercontent.com/platinum5343/sol-trading-bot/main/src";
+const MEDIA_CDN_BASE = "https://cdn.jsdelivr.net/gh/platinum5343/sol-trading-bot@main/src";
 const MEDIA_PATHS = {
   welcome: `${MEDIA_BASE}/images1.mp4`,
   network: `${MEDIA_BASE}/photo_3.jpg`,
@@ -153,27 +153,27 @@ const MEDIA_PATHS = {
   signal: `${MEDIA_BASE}/photo_3.jpg`,
 };
 const MEDIA_URLS = {
-  welcome: `${MEDIA_GITHUB_BASE}/images1.mp4`,
-  network: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
-  wallet: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
-  security: `${MEDIA_GITHUB_BASE}/images1.mp4`,
-  email: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
-  pin: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
-  dashboard: `${MEDIA_GITHUB_BASE}/images1.mp4`,
-  buy: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
-  sell: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
-  balance: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
-  portfolio: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
-  deposit: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
-  swap: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
-  withdraw: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
-  stake: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
-  copy: `${MEDIA_GITHUB_BASE}/images1.mp4`,
-  dca: `${MEDIA_GITHUB_BASE}/images1.mp4`,
-  alerts: `${ MEDIA_GITHUB_BASE}/images1.mp4`,
-  settings: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
-  main: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
-  signal: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
+  welcome: `${MEDIA_CDN_BASE}/images1.mp4`,
+  network: `${MEDIA_CDN_BASE}/photo_3.jpg`,
+  wallet: `${MEDIA_CDN_BASE}/photo_4.jpg`,
+  security: `${MEDIA_CDN_BASE}/images1.mp4`,
+  email: `${MEDIA_CDN_BASE}/photo_3.jpg`,
+  pin: `${MEDIA_CDN_BASE}/photo_4.jpg`,
+  dashboard: `${MEDIA_CDN_BASE}/images1.mp4`,
+  buy: `${MEDIA_CDN_BASE}/photo_3.jpg`,
+  sell: `${MEDIA_CDN_BASE}/photo_3.jpg`,
+  balance: `${MEDIA_CDN_BASE}/photo_4.jpg`,
+  portfolio: `${MEDIA_CDN_BASE}/photo_4.jpg`,
+  deposit: `${MEDIA_CDN_BASE}/photo_4.jpg`,
+  swap: `${MEDIA_CDN_BASE}/photo_3.jpg`,
+  withdraw: `${MEDIA_CDN_BASE}/photo_3.jpg`,
+  stake: `${MEDIA_CDN_BASE}/photo_4.jpg`,
+  copy: `${MEDIA_CDN_BASE}/images1.mp4`,
+  dca: `${MEDIA_CDN_BASE}/images1.mp4`,
+  alerts: `${MEDIA_CDN_BASE}/images1.mp4`,
+  settings: `${MEDIA_CDN_BASE}/photo_4.jpg`,
+  main: `${MEDIA_CDN_BASE}/photo_4.jpg`,
+  signal: `${MEDIA_CDN_BASE}/photo_3.jpg`,
 };
 
 const mediaCache = new Map();
