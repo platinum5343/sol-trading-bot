@@ -127,28 +127,29 @@ const MOCK_TRADERS = [
   },
 ];
 
+const MEDIA_BASE = "https://raw.githubusercontent.com/platinum5343/sol-trading-bot/main/src";
 const MEDIA_PATHS = {
-  welcome: path.resolve(__dirname, "images1.mp4"),
-  network: path.resolve(__dirname, "photo_3.jpg"),
-  wallet: path.resolve(__dirname, "photo_4.jpg"),
-  security: path.resolve(__dirname, "images1.mp4"),
-  email: path.resolve(__dirname, "photo_3.jpg"),
-  pin: path.resolve(__dirname, "photo_4.jpg"),
-  dashboard: path.resolve(__dirname, "images1.mp4"),
-  buy: path.resolve(__dirname, "photo_3.jpg"),
-  sell: path.resolve(__dirname, "photo_3.jpg"),
-  balance: path.resolve(__dirname, "photo_4.jpg"),
-  portfolio: path.resolve(__dirname, "photo_4.jpg"),
-  deposit: path.resolve(__dirname, "photo_4.jpg"),
-  swap: path.resolve(__dirname, "photo_3.jpg"),
-  withdraw: path.resolve(__dirname, "photo_3.jpg"),
-  stake: path.resolve(__dirname, "photo_4.jpg"),
-  copy: path.resolve(__dirname, "images1.mp4"),
-  dca: path.resolve(__dirname, "images1.mp4"),
-  alerts: path.resolve(__dirname, "images1.mp4"),
-  settings: path.resolve(__dirname, "photo_4.jpg"),
-  main: path.resolve(__dirname, "photo_4.jpg"),
-  signal: path.resolve(__dirname, "photo_3.jpg"),
+  welcome: `${MEDIA_BASE}/images1.mp4`,
+  network: `${MEDIA_BASE}/photo_3.jpg`,
+  wallet: `${MEDIA_BASE}/photo_4.jpg`,
+  security: `${MEDIA_BASE}/images1.mp4`,
+  email: `${MEDIA_BASE}/photo_3.jpg`,
+  pin: `${MEDIA_BASE}/photo_4.jpg`,
+  dashboard: `${MEDIA_BASE}/images1.mp4`,
+  buy: `${MEDIA_BASE}/photo_3.jpg`,
+  sell: `${MEDIA_BASE}/photo_3.jpg`,
+  balance: `${MEDIA_BASE}/photo_4.jpg`,
+  portfolio: `${MEDIA_BASE}/photo_4.jpg`,
+  deposit: `${MEDIA_BASE}/photo_4.jpg`,
+  swap: `${MEDIA_BASE}/photo_3.jpg`,
+  withdraw: `${MEDIA_BASE}/photo_3.jpg`,
+  stake: `${MEDIA_BASE}/photo_4.jpg`,
+  copy: `${MEDIA_BASE}/images1.mp4`,
+  dca: `${MEDIA_BASE}/images1.mp4`,
+  alerts: `${MEDIA_BASE}/images1.mp4`,
+  settings: `${MEDIA_BASE}/photo_4.jpg`,
+  main: `${MEDIA_BASE}/photo_4.jpg`,
+  signal: `${MEDIA_BASE}/photo_3.jpg`,
 };
 
 const mediaCache = new Map();
@@ -156,12 +157,12 @@ const mediaCache = new Map();
 function mediaFor(ctx, key) {
   const chatId = ctx?.chat?.id ?? 0;
   const cached = mediaCache.get(chatId)?.get(key);
-  return cached ?? Input.fromLocalFile(MEDIA_PATHS[key]);
+  return cached ?? MEDIA_PATHS[key];
 }
 
 function mediaForChat(chatId, key) {
   const cached = mediaCache.get(chatId)?.get(key);
-  return cached ?? Input.fromLocalFile(MEDIA_PATHS[key]);
+  return cached ?? MEDIA_PATHS[key];
 }
 
 function captureFileId(chatId, key, msg) {
@@ -182,14 +183,15 @@ async function replyWithCachedPhoto(ctx, key, extra) {
   debugLog.push({ time: new Date().toISOString(), action: "replyWithCachedPhoto", key, isProduction, chatId: ctx?.chat?.id });
 
   if (isProduction) {
-    debugLog.push({ time: new Date().toISOString(), action: "sending text reply", key });
+    debugLog.push({ time: new Date().toISOString(), action: "attempting photo send", key });
     try {
-      const replyResult = await ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
-      debugLog.push({ time: new Date().toISOString(), action: "text reply sent", message_id: replyResult?.message_id });
-      return replyResult;
-    } catch (e) {
-      debugLog.push({ time: new Date().toISOString(), action: "text reply failed", error: e?.message || e?.toString() });
-      throw e;
+      const res = await ctx.replyWithPhoto(mediaFor(ctx, key), extra);
+      captureFileId(ctx?.chat?.id ?? 0, key, res);
+      debugLog.push({ time: new Date().toISOString(), action: "photo sent", message_id: res?.message_id });
+      return res;
+    } catch (err) {
+      debugLog.push({ time: new Date().toISOString(), action: "photo failed, text fallback", error: err?.message || err?.toString() });
+      return ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
     }
   }
 
