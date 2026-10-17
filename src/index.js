@@ -277,74 +277,6 @@ const MOCK_TRADERS = [
     chart: "copytrade6",
     timeframe: "24h",
   },
-  {
-    id: "trader12",
-    name: "Crypto Zenkai",
-    username: "cryptozenkai",
-    avatar: "🔴",
-    description: "Crypto since 18' | Trencher & Investor | NFA & DYOR",
-    performance: "79",
-    min: "$500.00",
-    minSol: "≈ 4.82067104 SOL",
-    minEth: "≈ 0.20747577 ETH",
-    max: "$100,000.00",
-    maxSol: "≈ 964.13420748 SOL",
-    maxEth: "≈ 41.49515337 ETH",
-    image: "copytrader3",
-    chart: "copytrade7",
-    timeframe: "24h",
-  },
-  {
-    id: "trader13",
-    name: "COLD",
-    username: "cold_crypto",
-    avatar: "🔵",
-    description: "Crypto since 2017 | Top memecoin caller | Made over 7 figures trading | Sharing my alpha for free",
-    performance: "82",
-    min: "$489.00",
-    minSol: "≈ 4.71461627 SOL",
-    minEth: "≈ 0.2029113 ETH",
-    max: "$69,187.00",
-    maxSol: "≈ 667.05553413 SOL",
-    maxEth: "≈ 28.70925176 ETH",
-    image: "copytrader1",
-    chart: "copytrade8",
-    timeframe: "24h",
-  },
-  {
-    id: "trader14",
-    name: "SniperAlert",
-    username: "sniperalert",
-    avatar: "🟣",
-    description: "Multi-millionaire day trader sharing the ins & outs of trading along the way to long term success.",
-    performance: "89",
-    min: "$500.00",
-    minSol: "≈ 4.82067104 SOL",
-    minEth: "≈ 0.20747577 ETH",
-    max: "$100,000.00",
-    maxSol: "≈ 964.13420748 SOL",
-    maxEth: "≈ 41.49515337 ETH",
-    image: "copytrader2",
-    chart: "copytrade9",
-    timeframe: "24h",
-  },
-  {
-    id: "trader15",
-    name: "Kripto Fatih",
-    username: "kriptofatih",
-    avatar: "🟢",
-    description: "Author, illustrator, market follower. Short- and long-term crypto & stock analyses.",
-    performance: "92",
-    min: "$500.00",
-    minSol: "≈ 4.82067104 SOL",
-    minEth: "≈ 0.20747577 ETH",
-    max: "$15,000.00",
-    maxSol: "≈ 144.62013112 SOL",
-    maxEth: "≈ 6.224273 ETH",
-    image: "copytrader3",
-    chart: "copytrade10",
-    timeframe: "24h",
-  },
 ];
 
 const MEDIA_BASE = path.resolve(__dirname);
@@ -1270,9 +1202,10 @@ async function handleStakeToken(ctx, state, token) {
   });
 }
 
+const allImageKeys = ["copytrader1", "copytrader2", "copytrader3", "copytrade4", "copytrade5", "copytrade6", "copytrade7", "copytrade8", "copytrade9", "copytrade10", "copytrade11"];
+
 async function handleDashCopy(ctx, state) {
   state.currentView = "copy_trade";
-  const allImageKeys = ["copytrader1", "copytrader2", "copytrader3", "copytrade4", "copytrade5", "copytrade6", "copytrade7", "copytrade8", "copytrade9", "copytrade10", "copytrade11"];
   const promises = MOCK_TRADERS.map((t, i) => {
     const traderName = t.name.replace(/@/g, "").replace(/_/g, "\\_");
     const caption =
@@ -1281,7 +1214,7 @@ async function handleDashCopy(ctx, state) {
       `📊 Performance: ${t.performance}\n` +
       `💰 Min: ${t.min} (${t.minSol} / ${t.minEth})\n` +
       `💰 Max: ${t.max} (${t.maxSol} / ${t.maxEth})`;
-    const imageKey = allImageKeys[i % allImageKeys.length];
+    const imageKey = t.image || allImageKeys[i % allImageKeys.length];
     return replyWithCachedPhoto(ctx, imageKey, {
       caption: caption,
       parse_mode: "Markdown",
@@ -1300,12 +1233,9 @@ async function handleDashCopy(ctx, state) {
 async function handleCopyTrader(ctx, state, traderId) {
   const trader = MOCK_TRADERS.find((t) => t.id === traderId);
   if (!trader) return;
-  const traderIndex = MOCK_TRADERS.findIndex((t) => t.id === traderId);
-  const allImageKeys = ["copytrader1", "copytrader2", "copytrader3", "copytrade4", "copytrade5", "copytrade6", "copytrade7", "copytrade8", "copytrade9", "copytrade10", "copytrade11"];
-  const imageKey = allImageKeys[traderIndex % allImageKeys.length];
   state.currentView = "trader_detail";
   state.selectedTrader = traderId;
-  return replyWithCachedPhoto(ctx, imageKey, {
+  return replyWithCachedPhoto(ctx, trader.image || "copytrader1", {
     caption:
       `👥 *${trader.name.replace(/@_$/g, "").replace(/_/g, "\\_")}*\n\n` +
       `${trader.description}\n\n` +
@@ -1320,10 +1250,6 @@ async function handleCopyTrader(ctx, state, traderId) {
 async function handleCopyConfirm(ctx, state, traderId) {
   const trader = MOCK_TRADERS.find((t) => t.id === traderId);
   if (!trader) return;
-  const traderIndex = MOCK_TRADERS.findIndex((t) => t.id === traderId);
-  const allImageKeys = ["copytrader1", "copytrader2", "copytrader3", "copytrade4", "copytrade5", "copytrade6", "copytrade7", "copytrade8", "copytrade9", "copytrade10", "copytrade11"];
-  const imageKey = allImageKeys[traderIndex % allImageKeys.length];
-  state.currentView = "copy_confirm";
   state.copyTrades.push({
     traderId: trader.id,
     traderName: trader.name,
@@ -1333,13 +1259,68 @@ async function handleCopyConfirm(ctx, state, traderId) {
   });
   state.selectedTrader = null;
   syncState(state);
-  return replyWithCachedPhoto(ctx, imageKey, {
+  const solUsd = state.solBalance * SOL_PRICE;
+  const ethUsd = state.ethBalance * ETH_PRICE;
+  const caption =
+    `✅ *Trade Copied!*\n\n` +
+    `📊 *Following: ${trader.name.replace(/@_$/g, "").replace(/_/g, "\\_")}*\n` +
+    `📈 Performance: ${trader.performance}\n\n` +
+    `_You are now copying ${trader.name.replace(/@_$/g, "").replace(/_/g, "\\_")}'s trades._\n\n` +
+    `_Copy trading is simulated in this mock._\n\n` +
+    `💼 *Your Balance*\n` +
+    `   • SOL: $${solUsd.toFixed(2)}\n` +
+    `   • ETH: $${ethUsd.toFixed(2)}\n` +
+    `   • Total: $${(solUsd + ethUsd).toFixed(2)}\n\n` +
+    `💰 Min: ${trader.min} (${trader.minSol} / ${trader.minEth})\n` +
+    `💰 Max: ${trader.max} (${trader.maxSol} / ${trader.maxEth})\n\n` +
+    `Enter amount in USD:`;
+  return replyWithCachedPhoto(ctx, trader.image || "copytrader1", {
+    caption: caption,
+    parse_mode: "Markdown",
+    reply_markup: buyKeyboard().reply_markup,
+  });
+}
+
+async function handleCopyAmount(ctx, state, amount) {
+  const usd = parseFloat(amount);
+  const solUsd = state.solBalance * SOL_PRICE;
+  const ethUsd = state.ethBalance * ETH_PRICE;
+  const total = solUsd + ethUsd;
+
+  if (usd > total) {
+    return replyWithCachedPhoto(ctx, state.selectedTrader ? "copy" : "buy", {
+      caption:
+        "❌ *Insufficient balance.*\n\n" +
+        "💵 Total available: $" + total.toFixed(2) + "\n" +
+        `   • SOL: $${solUsd.toFixed(2)}\n` +
+        `   • ETH: $${ethUsd.toFixed(2)}\n` +
+        `💵 Required: $${usd.toFixed(2)}\n\n` +
+        "Please enter a lower amount.",
+      parse_mode: "Markdown",
+      reply_markup: backKeyboard().reply_markup,
+    });
+  }
+
+  const bought = usd / SOL_PRICE;
+  state.solBalance += bought;
+  state.tradeHistory.push({
+    type: "buy",
+    token: "SOL",
+    amount: bought,
+    usdValue: usd,
+    price: SOL_PRICE,
+    timestamp: new Date().toISOString(),
+  });
+  syncState(state);
+
+  return replyWithCachedPhoto(ctx, "buy", {
     caption:
-      "✅ *Trade Copied!*\n\n" +
-      `📊 *Following: ${trader.name.replace(/@_$/g, "").replace(/_/g, "\\_")}*\n` +
-      `📈 Performance: ${trader.performance}\n\n` +
-      `_You are now copying ${trader.name.replace(/@_$/g, "").replace(/_/g, "\\_")}'s trades._\n\n` +
-      "_Copy trading is simulated in this mock._",
+      "🟢 *Trade Successful!*\n\n" +
+      `💵 Purchased: $${usd.toFixed(2)} SOL\n` +
+      `💰 Received: ${bought.toFixed(6)} SOL\n` +
+      `Price: $${SOL_PRICE.toFixed(2)} / SOL\n\n` +
+      `✅ *Order executed (simulated)*\n` +
+      `New SOL balance: ${state.solBalance.toFixed(6)} SOL`,
     parse_mode: "Markdown",
     reply_markup: backKeyboard().reply_markup,
   });
@@ -1558,6 +1539,7 @@ function dispatchNav(text, state) {
   if (text === "📋 Copy This Trade" && state.selectedTrader) return (ctx) => handleCopyConfirm(ctx, state, state.selectedTrader);
 
   const buyAmountMatch = text.match(/^(\d+(?:\.\d+)?)$/);
+  if (buyAmountMatch && state.currentView === "copy_confirm") return (ctx) => handleCopyAmount(ctx, state, buyAmountMatch[1]);
   if (buyAmountMatch && state.pendingAction === "buy" && state.buyToken) return (ctx) => handleBuyAmount(ctx, state, buyAmountMatch[1]);
 
   if (state.pendingAction === "sell" && text === "25%") return (ctx) => handleSellPct(ctx, state, "25");
