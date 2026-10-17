@@ -92,38 +92,258 @@ const MOCK_ETH_ADDRESS = "0x2f769C7250ef361E9468291eBcCE39E331047ab7";
 const MOCK_TRADERS = [
   {
     id: "trader1",
-    name: "@alpha_trader",
+    name: "Alpha Trader",
+    username: "alpha_trader",
     avatar: "🟣",
-    trade: { action: "BUY", token: "SOL", amount: 500, entry: 152.3, target: 165, stopLoss: 145 },
+    description: "Top performing Solana trader with consistent monthly gains.",
+    performance: "+124%",
+    min: "$1,579.00",
+    minSol: "≈ 15.22367914 SOL",
+    minEth: "≈ 0.65520847 ETH",
+    max: "$988,666.00",
+    maxSol: "≈ 9,532.06710374 SOL",
+    maxEth: "≈ 410.24847298 ETH",
+    image: "copytrader1",
+    chart: "copytrade4",
     timeframe: "24h",
   },
   {
     id: "trader2",
-    name: "@beta_sniper",
-    avatar: "🔵",
-    trade: { action: "SELL", token: "ETH", amount: 1200, entry: 3500, target: 3800, stopLoss: 3300 },
+    name: "Entry X",
+    username: "entryx",
+    avatar: "🟣",
+    description: "High volume ETH trader with deep market analysis.",
+    performance: "+89%",
+    min: "$643.00",
+    minSol: "≈ 6.19938295 SOL",
+    minEth: "≈ 0.26681384 ETH",
+    max: "$678,333.00",
+    maxSol: "≈ 6,540.04049364 SOL",
+    maxEth: "≈ 281.47531868 ETH",
+    image: "copytrader2",
+    chart: "copytrade5",
     timeframe: "12h",
   },
   {
     id: "trader3",
-    name: "@gamma_bonk",
+    name: "yorhaclipz",
+    username: "yorhaclipz",
     avatar: "🟢",
-    trade: { action: "BUY", token: "BONK", amount: 800, entry: 0.0000085, target: 0.00001, stopLoss: 0.000007 },
+    description: "Focused on SOL ecosystem tokens and NFTs.",
+    performance: "+156%",
+    min: "$500.00",
+    minSol: "≈ 4.82067104 SOL",
+    minEth: "≈ 0.20747577 ETH",
+    max: "$10,000.00",
+    maxSol: "≈ 96.41342075 SOL",
+    maxEth: "≈ 4.14951534 ETH",
+    image: "copytrader3",
+    chart: "copytrade6",
     timeframe: "5m",
   },
   {
     id: "trader4",
-    name: "@delta_wif",
-    avatar: "🔴",
-    trade: { action: "BUY", token: "WIF", amount: 450, entry: 2.1, target: 2.8, stopLoss: 1.8 },
+    name: "Edward Johnson",
+    username: "edward_johnson",
+    avatar: "🟣",
+    description: "Option Trader",
+    performance: "79%",
+    min: "$500.00",
+    minSol: "≈ 4.82067104 SOL",
+    minEth: "≈ 0.20747577 ETH",
+    max: "$28,200.00",
+    maxSol: "≈ 271.88584651 SOL",
+    maxEth: "≈ 11.70163325 ETH",
+    image: "copytrader1",
+    chart: "copytrade7",
     timeframe: "3h",
   },
   {
     id: "trader5",
-    name: "@epsilon_jup",
-    avatar: "🟡",
-    trade: { action: "BUY", token: "JUP", amount: 600, entry: 0.65, target: 0.85, stopLoss: 0.55 },
+    name: "Zyrox0x",
+    username: "zyrox0x",
+    avatar: "🟣",
+    description: "Memecoin Trader",
+    performance: "85%",
+    min: "$400.00",
+    minSol: "≈ 3.85653683 SOL",
+    minEth: "≈ 0.16598061 ETH",
+    max: "$100,000.00",
+    maxSol: "≈ 964.13420748 SOL",
+    maxEth: "≈ 41.49515337 ETH",
+    image: "copytrader2",
+    chart: "copytrade8",
     timeframe: "1h",
+  },
+  {
+    id: "trader6",
+    name: "MATTSMATTED",
+    username: "mattsmatted",
+    avatar: "🔴",
+    description: "Showing the up and downs of a full time daytrader",
+    performance: "89%",
+    min: "$500.00",
+    minSol: "≈ 4.82067104 SOL",
+    minEth: "≈ 0.20747577 ETH",
+    max: "$100,000.00",
+    maxSol: "≈ 964.13420748 SOL",
+    maxEth: "≈ 41.49515337 ETH",
+    image: "copytrader3",
+    chart: "copytrade9",
+    timeframe: "24h",
+  },
+  {
+    id: "trader7",
+    name: "Guo Shen 郭深",
+    username: "guoshen",
+    avatar: "🟡",
+    description: "Onchain worlds need autonomous minds. Al agents are coming for every market.",
+    performance: "87%",
+    min: "$500.00",
+    minSol: "≈ 4.82067104 SOL",
+    minEth: "≈ 0.20747577 ETH",
+    max: "$100,000.00",
+    maxSol: "≈ 964.13420748 SOL",
+    maxEth: "≈ 41.49515337 ETH",
+    image: "copytrader1",
+    chart: "copytrade10",
+    timeframe: "24h",
+  },
+  {
+    id: "trader8",
+    name: "Ronald Carter",
+    username: "ronald_carter",
+    avatar: "🔵",
+    description: "Investing for Entertainment",
+    performance: "92%",
+    min: "$422.00",
+    minSol: "≈ 4.06864636 SOL",
+    minEth: "≈ 0.17510955 ETH",
+    max: "$1,000,000.00",
+    maxSol: "≈ 9,641.34207482 SOL",
+    maxEth: "≈ 414.95153366 ETH",
+    image: "copytrader2",
+    chart: "copytrade11",
+    timeframe: "24h",
+  },
+  {
+    id: "trader9",
+    name: "The SoLstice",
+    username: "thesolstice",
+    avatar: "🟣",
+    description: "Welcome to the family, son\nTrade with me on fomo and get 10% off fees",
+    performance: "78",
+    min: "$300.00",
+    minSol: "≈ 2.89240262 SOL",
+    minEth: "≈ 0.12448546 ETH",
+    max: "$1,000,000.00",
+    maxSol: "≈ 9,641.34207482 SOL",
+    maxEth: "≈ 414.95153366 ETH",
+    image: "copytrader3",
+    chart: "copytrade4",
+    timeframe: "24h",
+  },
+  {
+    id: "trader10",
+    name: "Hailey crypto",
+    username: "haileycrypto",
+    avatar: "🟢",
+    description: "CRYPTO GURU,MEMECOIN LOVER,OF MEMECOIN DEGEN",
+    performance: "88",
+    min: "$400.00",
+    minSol: "≈ 3.85653683 SOL",
+    minEth: "≈ 0.16598061 ETH",
+    max: "$1,000,000.00",
+    maxSol: "≈ 9,641.34207482 SOL",
+    maxEth: "≈ 414.95153366 ETH",
+    image: "copytrader1",
+    chart: "copytrade5",
+    timeframe: "24h",
+  },
+  {
+    id: "trader11",
+    name: "CF",
+    username: "cf_crypto",
+    avatar: "🟡",
+    description: "Crypto since 2016 | Investor & Trader | Early Alphas & Real Insights | NFA & DYOR top 3 solana trader",
+    performance: "89",
+    min: "$300.00",
+    minSol: "≈ 2.89240262 SOL",
+    minEth: "≈ 0.12448546 ETH",
+    max: "$100,000.00",
+    maxSol: "≈ 964.13420748 SOL",
+    maxEth: "≈ 41.49515337 ETH",
+    image: "copytrader2",
+    chart: "copytrade6",
+    timeframe: "24h",
+  },
+  {
+    id: "trader12",
+    name: "Crypto Zenkai",
+    username: "cryptozenkai",
+    avatar: "🔴",
+    description: "Crypto since 18' | Trencher & Investor | NFA & DYOR",
+    performance: "79",
+    min: "$500.00",
+    minSol: "≈ 4.82067104 SOL",
+    minEth: "≈ 0.20747577 ETH",
+    max: "$100,000.00",
+    maxSol: "≈ 964.13420748 SOL",
+    maxEth: "≈ 41.49515337 ETH",
+    image: "copytrader3",
+    chart: "copytrade7",
+    timeframe: "24h",
+  },
+  {
+    id: "trader13",
+    name: "COLD",
+    username: "cold_crypto",
+    avatar: "🔵",
+    description: "Crypto since 2017 | Top memecoin caller | Made over 7 figures trading | Sharing my alpha for free",
+    performance: "82",
+    min: "$489.00",
+    minSol: "≈ 4.71461627 SOL",
+    minEth: "≈ 0.2029113 ETH",
+    max: "$69,187.00",
+    maxSol: "≈ 667.05553413 SOL",
+    maxEth: "≈ 28.70925176 ETH",
+    image: "copytrader1",
+    chart: "copytrade8",
+    timeframe: "24h",
+  },
+  {
+    id: "trader14",
+    name: "SniperAlert",
+    username: "sniperalert",
+    avatar: "🟣",
+    description: "Multi-millionaire day trader sharing the ins & outs of trading along the way to long term success.",
+    performance: "89",
+    min: "$500.00",
+    minSol: "≈ 4.82067104 SOL",
+    minEth: "≈ 0.20747577 ETH",
+    max: "$100,000.00",
+    maxSol: "≈ 964.13420748 SOL",
+    maxEth: "≈ 41.49515337 ETH",
+    image: "copytrader2",
+    chart: "copytrade9",
+    timeframe: "24h",
+  },
+  {
+    id: "trader15",
+    name: "Kripto Fatih",
+    username: "kriptofatih",
+    avatar: "🟢",
+    description: "Author, illustrator, market follower. Short- and long-term crypto & stock analyses.",
+    performance: "92",
+    min: "$500.00",
+    minSol: "≈ 4.82067104 SOL",
+    minEth: "≈ 0.20747577 ETH",
+    max: "$15,000.00",
+    maxSol: "≈ 144.62013112 SOL",
+    maxEth: "≈ 6.224273 ETH",
+    image: "copytrader3",
+    chart: "copytrade10",
+    timeframe: "24h",
   },
 ];
 
@@ -151,6 +371,17 @@ const MEDIA_PATHS = {
   settings: `${MEDIA_BASE}/photo_4.jpg`,
   main: `${MEDIA_BASE}/photo_4.jpg`,
   signal: `${MEDIA_BASE}/photo_3.jpg`,
+  copytrader1: `${MEDIA_BASE}/copytrader1.jpg`,
+  copytrader2: `${MEDIA_BASE}/copytrader2.jpg`,
+  copytrader3: `${MEDIA_BASE}/copytrader3.jpg`,
+  copytrade4: `${MEDIA_BASE}/copytrade4.jpg`,
+  copytrade5: `${MEDIA_BASE}/copytrade5.jpg`,
+  copytrade6: `${MEDIA_BASE}/copytrade6.jpg`,
+  copytrade7: `${MEDIA_BASE}/copytrade7.jpg`,
+  copytrade8: `${MEDIA_BASE}/copytrade8.jpg`,
+  copytrade9: `${MEDIA_BASE}/copytrade9.jpg`,
+  copytrade10: `${MEDIA_BASE}/copytrade10.jpg`,
+  copytrade11: `${MEDIA_BASE}/copytrade11.jpg`,
 };
 const MEDIA_URLS = {
   welcome: `${MEDIA_CDN_BASE}/images1.mp4`,
@@ -174,6 +405,17 @@ const MEDIA_URLS = {
   settings: `${MEDIA_CDN_BASE}/photo_4.jpg`,
   main: `${MEDIA_CDN_BASE}/photo_4.jpg`,
   signal: `${MEDIA_CDN_BASE}/photo_3.jpg`,
+  copytrader1: `${MEDIA_CDN_BASE}/copytrader1.jpg`,
+  copytrader2: `${MEDIA_CDN_BASE}/copytrader2.jpg`,
+  copytrader3: `${MEDIA_CDN_BASE}/copytrader3.jpg`,
+  copytrade4: `${MEDIA_CDN_BASE}/copytrade4.jpg`,
+  copytrade5: `${MEDIA_CDN_BASE}/copytrade5.jpg`,
+  copytrade6: `${MEDIA_CDN_BASE}/copytrade6.jpg`,
+  copytrade7: `${MEDIA_CDN_BASE}/copytrade7.jpg`,
+  copytrade8: `${MEDIA_CDN_BASE}/copytrade8.jpg`,
+  copytrade9: `${MEDIA_CDN_BASE}/copytrade9.jpg`,
+  copytrade10: `${MEDIA_CDN_BASE}/copytrade10.jpg`,
+  copytrade11: `${MEDIA_CDN_BASE}/copytrade11.jpg`,
 };
 
 const mediaCache = new Map();
@@ -1031,7 +1273,7 @@ async function handleStakeToken(ctx, state, token) {
 async function handleDashCopy(ctx, state) {
   state.currentView = "copy_trade";
   const tradersText = MOCK_TRADERS.map((t, i) =>
-    `${i + 1}. ${t.avatar} ${t.name.replace(/@/g, "").replace(/_/g, "\\_")} — ${t.trade.token} ${t.trade.action === "BUY" ? "↑" : "↓"} ${t.timeframe}`
+    `${i + 1}. ${t.avatar} ${t.name.replace(/@/g, "").replace(/_/g, "\\_")} — ${t.performance}`
   ).join("\n");
   return replyWithCachedPhoto(ctx, "copy", {
     caption:
@@ -1049,15 +1291,14 @@ async function handleCopyTrader(ctx, state, traderId) {
   if (!trader) return;
   state.currentView = "trader_detail";
   state.selectedTrader = traderId;
-  return replyWithCachedPhoto(ctx, "copy", {
+  const imageKey = trader.image || "copytrader1";
+  return replyWithCachedPhoto(ctx, imageKey, {
     caption:
-      `👥 *${trader.name.replace(/@/g, "").replace(/_/g, "\\_")}*\n\n` +
-      "📊 *Trade: " + trader.trade.action + " " + trader.trade.token + "*\n" +
-      `💰 Amount: $${trader.trade.amount.toFixed(2)}\n` +
-      `⚡ Entry: $${trader.trade.entry.toFixed(4)}\n` +
-      `🎯 Target: $${trader.trade.target.toFixed(2)}\n` +
-      `🛑 Stop Loss: $${trader.trade.stopLoss.toFixed(2)}\n\n` +
-      `_Timeframe: ${trader.timeframe}_`,
+      `👥 *${trader.name.replace(/@_$/g, "").replace(/_/g, "\\_")}*\n\n` +
+      `${trader.description}\n\n` +
+      `📊 *Performance: ${trader.performance}*\n` +
+      `💰 Min: ${trader.min} (${trader.minSol} / ${trader.minEth})\n` +
+      `💰 Max: ${trader.max} (${trader.maxSol} / ${trader.maxEth})`,
     parse_mode: "Markdown",
     reply_markup: copyTradeKeyboard(trader.id).reply_markup,
   });
@@ -1070,21 +1311,19 @@ async function handleCopyConfirm(ctx, state, traderId) {
   state.copyTrades.push({
     traderId: trader.id,
     traderName: trader.name,
-    trade: trader.trade,
+    trade: trader.trade || { action: "BUY", token: "SOL", amount: 0, entry: 0, target: 0, stopLoss: 0 },
     timeframe: trader.timeframe,
     timestamp: new Date().toISOString(),
   });
   state.selectedTrader = null;
   syncState(state);
-  return replyWithCachedPhoto(ctx, "copy", {
+  const chartKey = trader.chart || "copytrade4";
+  return replyWithCachedPhoto(ctx, chartKey, {
     caption:
       "✅ *Trade Copied!*\n\n" +
-      `📊 *Copied: ${trader.trade.action} ${trader.trade.token}*\n` +
-      `💰 Amount: $${trader.trade.amount.toFixed(2)}\n` +
-      `⚡ Entry: $${trader.trade.entry.toFixed(4)}\n` +
-      `🎯 Target: $${trader.trade.target.toFixed(2)}\n` +
-      `🛑 Stop Loss: $${trader.trade.stopLoss.toFixed(2)}\n\n` +
-      `_You are now copying ${trader.name.replace(/@/g, "").replace(/_/g, "\\_")}'s trade._\n\n` +
+      `📊 *Following: ${trader.name.replace(/@_$/g, "").replace(/_/g, "\\_")}*\n` +
+      `📈 Performance: ${trader.performance}\n\n` +
+      `_You are now copying ${trader.name.replace(/@_$/g, "").replace(/_/g, "\\_")}'s trades._\n\n` +
       "_Copy trading is simulated in this mock._",
     parse_mode: "Markdown",
     reply_markup: backKeyboard().reply_markup,
