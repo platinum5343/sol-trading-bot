@@ -97,9 +97,9 @@ const MOCK_TRADERS = [
     avatar: "🟣",
     description: "Top performing Solana trader with consistent monthly gains.",
     performance: "+124%",
-    min: "$1,579.00",
-    minSol: "≈ 15.22367914 SOL",
-    minEth: "≈ 0.65520847 ETH",
+    min: "$500.00",
+    minSol: "≈ 4.82067104 SOL",
+    minEth: "≈ 0.20747577 ETH",
     max: "$988,666.00",
     maxSol: "≈ 9,532.06710374 SOL",
     maxEth: "≈ 410.24847298 ETH",
@@ -113,9 +113,9 @@ const MOCK_TRADERS = [
     avatar: "🟣",
     description: "High volume ETH trader with deep market analysis.",
     performance: "+89%",
-    min: "$643.00",
-    minSol: "≈ 6.19938295 SOL",
-    minEth: "≈ 0.26681384 ETH",
+    min: "$500.00",
+    minSol: "≈ 4.82067104 SOL",
+    minEth: "≈ 0.20747577 ETH",
     max: "$678,333.00",
     maxSol: "≈ 6,540.04049364 SOL",
     maxEth: "≈ 281.47531868 ETH",
@@ -161,9 +161,9 @@ const MOCK_TRADERS = [
     avatar: "🟣",
     description: "Memecoin Trader",
     performance: "85%",
-    min: "$400.00",
-    minSol: "≈ 3.85653683 SOL",
-    minEth: "≈ 0.16598061 ETH",
+    min: "$500.00",
+    minSol: "≈ 4.82067104 SOL",
+    minEth: "≈ 0.20747577 ETH",
     max: "$100,000.00",
     maxSol: "≈ 964.13420748 SOL",
     maxEth: "≈ 41.49515337 ETH",
@@ -209,9 +209,9 @@ const MOCK_TRADERS = [
     avatar: "🔵",
     description: "Investing for Entertainment",
     performance: "92%",
-    min: "$422.00",
-    minSol: "≈ 4.06864636 SOL",
-    minEth: "≈ 0.17510955 ETH",
+    min: "$500.00",
+    minSol: "≈ 4.82067104 SOL",
+    minEth: "≈ 0.20747577 ETH",
     max: "$1,000,000.00",
     maxSol: "≈ 9,641.34207482 SOL",
     maxEth: "≈ 414.95153366 ETH",
@@ -225,9 +225,9 @@ const MOCK_TRADERS = [
     avatar: "🟣",
     description: "Welcome to the family, son\nTrade with me on fomo and get 10% off fees",
     performance: "78",
-    min: "$300.00",
-    minSol: "≈ 2.89240262 SOL",
-    minEth: "≈ 0.12448546 ETH",
+    min: "$500.00",
+    minSol: "≈ 4.82067104 SOL",
+    minEth: "≈ 0.20747577 ETH",
     max: "$1,000,000.00",
     maxSol: "≈ 9,641.34207482 SOL",
     maxEth: "≈ 414.95153366 ETH",
@@ -241,9 +241,9 @@ const MOCK_TRADERS = [
     avatar: "🟢",
     description: "CRYPTO GURU,MEMECOIN LOVER,OF MEMECOIN DEGEN",
     performance: "88",
-    min: "$400.00",
-    minSol: "≈ 3.85653683 SOL",
-    minEth: "≈ 0.16598061 ETH",
+    min: "$500.00",
+    minSol: "≈ 4.82067104 SOL",
+    minEth: "≈ 0.20747577 ETH",
     max: "$1,000,000.00",
     maxSol: "≈ 9,641.34207482 SOL",
     maxEth: "≈ 414.95153366 ETH",
@@ -257,9 +257,9 @@ const MOCK_TRADERS = [
     avatar: "🟡",
     description: "Crypto since 2016 | Investor & Trader | Early Alphas & Real Insights | NFA & DYOR top 3 solana trader",
     performance: "89",
-    min: "$300.00",
-    minSol: "≈ 2.89240262 SOL",
-    minEth: "≈ 0.12448546 ETH",
+    min: "$500.00",
+    minSol: "≈ 4.82067104 SOL",
+    minEth: "≈ 0.20747577 ETH",
     max: "$100,000.00",
     maxSol: "≈ 964.13420748 SOL",
     maxEth: "≈ 41.49515337 ETH",
@@ -502,7 +502,7 @@ registeredUsers.set(999001, {
   ],
   dcaPlans: [],
    settings: { slippage: false, autoBuy: false, mevProtection: false },
-   signalStrength: 0.0,
+    signalStrength: 100,
 });
 
 function getState(ctx) {
@@ -1382,10 +1382,10 @@ function alertsKeyboard(state) {
 
 async function handleDashSignal(ctx, state) {
   state.currentView = "signal";
-  const signalStrength = state.signalStrength || 0.0;
-  const status = signalStrength < 33 ? "🔴 LOW" : signalStrength < 66 ? "🟡 MEDIUM" : "🟢 HIGH";
-  const filled = Math.floor(signalStrength / 5);
-  const bar = "█".repeat(filled) + "░".repeat(20 - filled);
+  const signalStrength = 100;
+  const status = "🟢 HIGH";
+  const filled = 20;
+  const bar = "█".repeat(filled);
   return replyWithCachedPhoto(ctx, "signal", {
     caption:
       "📊 *Signal Strength*\n\n" +
@@ -2435,7 +2435,7 @@ bot.on("text", async (ctx) => {
      state.sellToken = null;
      state.currentView = null;
      state.pendingAction = null;
-     state.selectedTrader = traderId;
+      state.selectedTrader = null;
      return replyWithCachedPhoto(ctx, "welcome", {
        caption: WELCOME_TEXT,
        parse_mode: "Markdown",
