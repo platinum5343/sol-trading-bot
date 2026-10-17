@@ -217,17 +217,14 @@ async function replyWithCachedPhoto(ctx, key, extra) {
   debugLog.push({ time: new Date().toISOString(), action: "replyWithCachedPhoto", key, isProduction, chatId: ctx?.chat?.id });
 
   if (isProduction) {
-    debugLog.push({ time: new Date().toISOString(), action: "attempting photo send (production)", key });
+    debugLog.push({ time: new Date().toISOString(), action: "text only mode (production)", key });
     try {
-      const res = await ctx.replyWithPhoto(mediaFor(ctx, key), extra);
-      captureFileId(ctx?.chat?.id ?? 0, key, res);
-      debugLog.push({ time: new Date().toISOString(), action: "photo sent (production)", message_id: res?.message_id });
-      return res;
-    } catch (err) {
-      debugLog.push({ time: new Date().toISOString(), action: "photo failed, text fallback (production)", error: err?.message || err?.toString() });
       const textRes = await ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
       debugLog.push({ time: new Date().toISOString(), action: "text reply sent (production)", message_id: textRes?.message_id });
       return textRes;
+    } catch (err) {
+      debugLog.push({ time: new Date().toISOString(), action: "text reply failed", error: err?.message || err?.toString() });
+      return null;
     }
   }
 
@@ -249,6 +246,21 @@ async function sendPhotoCached(chatId, key, extra) {
   const caption = extra?.caption || "Welcome!";
   const parseMode = extra?.parse_mode || "Markdown";
   const replyMarkup = extra?.reply_markup;
+  const isProduction = process.env.RENDER || process.env.NODE_ENV === "production";
+
+  if (isProduction) {
+    debugLog.push({ time: new Date().toISOString(), action: "text only mode (sendPhotoCached production)", key, chatId });
+    try {
+      const res = await bot.telegram.sendMessage(chatId, caption, { parse_mode: parseMode, reply_markup: replyMarkup });
+      debugLog.push({ time: new Date().toISOString(), action: "text message sent (sendPhotoCached production)", message_id: res?.message_id, key, chatId });
+      return res;
+    } catch (err) {
+      debugLog.push({ time: new Date().toISOString(), action: "text message failed (sendPhotoCached)", error: err?.message || err?.toString(), key, chatId });
+      console.error(`⚠️  Failed to send text message (${key}) to chat ${chatId}:`, err?.message || err);
+      return null;
+    }
+  }
+
   try {
     const res = await bot.telegram.sendPhoto(chatId, mediaForChat(chatId, key), extra);
     captureFileId(chatId, key, res);
