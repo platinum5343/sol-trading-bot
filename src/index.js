@@ -128,6 +128,7 @@ const MOCK_TRADERS = [
 ];
 
 const MEDIA_BASE = path.resolve(__dirname);
+const MEDIA_GITHUB_BASE = "https://raw.githubusercontent.com/platinum5343/sol-trading-bot/main/src";
 const MEDIA_PATHS = {
   welcome: `${MEDIA_BASE}/images1.mp4`,
   network: `${MEDIA_BASE}/photo_3.jpg`,
@@ -151,6 +152,29 @@ const MEDIA_PATHS = {
   main: `${MEDIA_BASE}/photo_4.jpg`,
   signal: `${MEDIA_BASE}/photo_3.jpg`,
 };
+const MEDIA_URLS = {
+  welcome: `${MEDIA_GITHUB_BASE}/images1.mp4`,
+  network: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
+  wallet: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
+  security: `${MEDIA_GITHUB_BASE}/images1.mp4`,
+  email: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
+  pin: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
+  dashboard: `${MEDIA_GITHUB_BASE}/images1.mp4`,
+  buy: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
+  sell: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
+  balance: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
+  portfolio: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
+  deposit: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
+  swap: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
+  withdraw: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
+  stake: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
+  copy: `${MEDIA_GITHUB_BASE}/images1.mp4`,
+  dca: `${MEDIA_GITHUB_BASE}/images1.mp4`,
+  alerts: `${ MEDIA_GITHUB_BASE}/images1.mp4`,
+  settings: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
+  main: `${MEDIA_GITHUB_BASE}/photo_4.jpg`,
+  signal: `${MEDIA_GITHUB_BASE}/photo_3.jpg`,
+};
 
 const mediaCache = new Map();
 
@@ -158,45 +182,21 @@ function mediaFor(ctx, key) {
   const chatId = ctx?.chat?.id ?? 0;
   const cached = mediaCache.get(chatId)?.get(key);
   if (cached) return cached;
-  const filePath = MEDIA_PATHS[key];
-  if (process.env.RENDER || process.env.NODE_ENV === "production") {
-    try {
-      const data = fs.readFileSync(filePath);
-      const ext = path.extname(filePath).toLowerCase();
-      let contentType;
-      if (ext === ".mp4") contentType = "video/mp4";
-      else if (ext === ".jpg" || ext === ".jpeg") contentType = "image/jpeg";
-      else if (ext === ".png") contentType = "image/png";
-      else contentType = "application/octet-stream";
-      return Input.fromBuffer(data, contentType, path.basename(filePath));
-    } catch (e) {
-      console.error("Failed to read media file:", e?.message);
-      return Input.fromLocalFile(filePath);
-    }
+  const isProd = process.env.RENDER || process.env.NODE_ENV === "production";
+  if (isProd && MEDIA_URLS[key]) {
+    return Input.fromURL(MEDIA_URLS[key]);
   }
-  return Input.fromLocalFile(filePath);
+  return Input.fromLocalFile(MEDIA_PATHS[key]);
 }
 
 function mediaForChat(chatId, key) {
   const cached = mediaCache.get(chatId)?.get(key);
   if (cached) return cached;
-  const filePath = MEDIA_PATHS[key];
-  if (process.env.RENDER || process.env.NODE_ENV === "production") {
-    try {
-      const data = fs.readFileSync(filePath);
-      const ext = path.extname(filePath).toLowerCase();
-      let contentType;
-      if (ext === ".mp4") contentType = "video/mp4";
-      else if (ext === ".jpg" || ext === ".jpeg") contentType = "image/jpeg";
-      else if (ext === ".png") contentType = "image/png";
-      else contentType = "application/octet-stream";
-      return Input.fromBuffer(data, contentType, path.basename(filePath));
-    } catch (e) {
-      console.error("Failed to read media file:", e?.message);
-      return Input.fromLocalFile(filePath);
-    }
+  const isProd = process.env.RENDER || process.env.NODE_ENV === "production";
+  if (isProd && MEDIA_URLS[key]) {
+    return Input.fromURL(MEDIA_URLS[key]);
   }
-  return Input.fromLocalFile(filePath);
+  return Input.fromLocalFile(MEDIA_PATHS[key]);
 }
 
 function captureFileId(chatId, key, msg) {
@@ -212,33 +212,25 @@ async function replyWithCachedPhoto(ctx, key, extra) {
   const caption = extra?.caption || "Welcome!";
   const parseMode = extra?.parse_mode || "Markdown";
   const replyMarkup = extra?.reply_markup;
-  const isProduction = process.env.RENDER || process.env.NODE_ENV === "production";
 
-  debugLog.push({ time: new Date().toISOString(), action: "replyWithCachedPhoto", key, isProduction, chatId: ctx?.chat?.id });
-
-  if (isProduction) {
-    debugLog.push({ time: new Date().toISOString(), action: "text only mode (production)", key });
-    try {
-      const textRes = await ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
-      debugLog.push({ time: new Date().toISOString(), action: "text reply sent (production)", message_id: textRes?.message_id });
-      return textRes;
-    } catch (err) {
-      debugLog.push({ time: new Date().toISOString(), action: "text reply failed", error: err?.message || err?.toString() });
-      return null;
-    }
-  }
-
+  debugLog.push({ time: new Date().toISOString(), action: "replyWithCachedPhoto", key, chatId: ctx?.chat?.id });
   debugLog.push({ time: new Date().toISOString(), action: "attempting photo send", key });
+
   try {
     const res = await ctx.replyWithPhoto(mediaFor(ctx, key), extra);
     captureFileId(ctx?.chat?.id ?? 0, key, res);
     debugLog.push({ time: new Date().toISOString(), action: "photo sent", message_id: res?.message_id });
     return res;
   } catch (err) {
-     debugLog.push({ time: new Date().toISOString(), action: "photo failed, text fallback", error: err?.message || err?.toString() });
-    const textRes = await ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
-    debugLog.push({ time: new Date().toISOString(), action: "text reply sent", message_id: textRes?.message_id });
-    return textRes;
+    debugLog.push({ time: new Date().toISOString(), action: "photo failed, text fallback", error: err?.message || err?.toString() });
+    try {
+      const textRes = await ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
+      debugLog.push({ time: new Date().toISOString(), action: "text reply sent", message_id: textRes?.message_id });
+      return textRes;
+    } catch (textErr) {
+      debugLog.push({ time: new Date().toISOString(), action: "text reply failed", error: textErr?.message || textErr?.toString() });
+      return null;
+    }
   }
 }
 
@@ -246,20 +238,8 @@ async function sendPhotoCached(chatId, key, extra) {
   const caption = extra?.caption || "Welcome!";
   const parseMode = extra?.parse_mode || "Markdown";
   const replyMarkup = extra?.reply_markup;
-  const isProduction = process.env.RENDER || process.env.NODE_ENV === "production";
 
-  if (isProduction) {
-    debugLog.push({ time: new Date().toISOString(), action: "text only mode (sendPhotoCached production)", key, chatId });
-    try {
-      const res = await bot.telegram.sendMessage(chatId, caption, { parse_mode: parseMode, reply_markup: replyMarkup });
-      debugLog.push({ time: new Date().toISOString(), action: "text message sent (sendPhotoCached production)", message_id: res?.message_id, key, chatId });
-      return res;
-    } catch (err) {
-      debugLog.push({ time: new Date().toISOString(), action: "text message failed (sendPhotoCached)", error: err?.message || err?.toString(), key, chatId });
-      console.error(`⚠️  Failed to send text message (${key}) to chat ${chatId}:`, err?.message || err);
-      return null;
-    }
-  }
+  debugLog.push({ time: new Date().toISOString(), action: "sendPhotoCached attempt", key, chatId });
 
   try {
     const res = await bot.telegram.sendPhoto(chatId, mediaForChat(chatId, key), extra);
@@ -270,7 +250,9 @@ async function sendPhotoCached(chatId, key, extra) {
     debugLog.push({ time: new Date().toISOString(), action: "photo failed, text fallback (sendPhotoCached)", error: err?.message || err?.toString(), key, chatId });
     console.error(`⚠️  Failed to send photo (${key}) to chat ${chatId}:`, err?.message || err);
     try {
-      return await bot.telegram.sendMessage(chatId, caption, { parse_mode: parseMode, reply_markup: replyMarkup });
+      const textRes = await bot.telegram.sendMessage(chatId, caption, { parse_mode: parseMode, reply_markup: replyMarkup });
+      debugLog.push({ time: new Date().toISOString(), action: "text message sent (sendPhotoCached fallback)", message_id: textRes?.message_id, key, chatId });
+      return textRes;
     } catch (err2) {
       console.error(`⚠️  Also failed to send text message (${key}) to chat ${chatId}:`, err2?.message || err2);
       debugLog.push({ time: new Date().toISOString(), action: "text fallback also failed", error: err2?.message || err2?.toString(), key, chatId });
