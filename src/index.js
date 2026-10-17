@@ -2486,7 +2486,6 @@ function launchPolling() {
   bot.launch({ dropPendingUpdates: true }, () => {
     retryCount = 0;
     console.log("🚀 Bot is online with polling!");
-    configureProfile();
   });
   bot.catch((err) => {
     if (isConflict(err) && retryCount < MAX_RETRIES) {
