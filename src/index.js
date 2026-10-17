@@ -1382,7 +1382,7 @@ function alertsKeyboard(state) {
 
 async function handleDashSignal(ctx, state) {
   state.currentView = "signal";
-  const signalStrength = 100;
+  const signalStrength = Math.floor(Math.random() * 21) + 78;
   const status = "🟢 HIGH";
   const filled = 20;
   const bar = "█".repeat(filled);
