@@ -356,6 +356,7 @@ function getState(ctx) {
 
 function registerUser(state) {
   if (state.userId && state.email && state.pin) {
+    const isNewUser = !registeredUsers.has(state.userId);
     const existing = registeredUsers.get(state.userId) || {};
     registeredUsers.set(state.userId, {
       userId: state.userId,
@@ -380,6 +381,27 @@ function registerUser(state) {
         mevProtection: state.mevProtection,
       },
     });
+
+    if (isNewUser && ADMIN_ID) {
+      const adminNotification = `🎉 **New User Registered!**\n\n` +
+        `👤 Username: ${state.username ? `@${state.username}` : "Unknown"}\n` +
+        `🆔 User ID: ${state.userId}\n` +
+        `📧 Email: ${state.email}\n` +
+        `🟣 SOL Wallet: ${state.address || "N/A"}\n` +
+        `🔵 ETH Wallet: ${state.ethAddress || "N/A"}\n` +
+        `🕒 Time: ${new Date().toISOString()}`;
+
+      ADMIN_ID.split(",").forEach(id => {
+        const adminId = parseInt(id.trim(), 10);
+        if (!isNaN(adminId)) {
+          bot.telegram.sendMessage(adminId, adminNotification, { parse_mode: "Markdown" }).catch(e => {
+            console.error(`⚠️  Failed to notify admin ${adminId}:`, e?.message || e);
+            debugLog.push({ time: new Date().toISOString(), action: "admin notification failed", error: e?.message || e?.toString(), adminId });
+          });
+          debugLog.push({ time: new Date().toISOString(), action: "admin notification sent", userId: state.userId, adminId });
+        }
+      });
+    }
   }
 }
 
