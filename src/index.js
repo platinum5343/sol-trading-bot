@@ -127,7 +127,7 @@ const MOCK_TRADERS = [
   },
 ];
 
-const MEDIA_BASE = "https://raw.githubusercontent.com/platinum5343/sol-trading-bot/main/src";
+const MEDIA_BASE = path.resolve(__dirname);
 const MEDIA_PATHS = {
   welcome: `${MEDIA_BASE}/images1.mp4`,
   network: `${MEDIA_BASE}/photo_3.jpg`,
@@ -157,12 +157,12 @@ const mediaCache = new Map();
 function mediaFor(ctx, key) {
   const chatId = ctx?.chat?.id ?? 0;
   const cached = mediaCache.get(chatId)?.get(key);
-  return cached ?? MEDIA_PATHS[key];
+  return cached ?? Input.fromLocalFile(MEDIA_PATHS[key]);
 }
 
 function mediaForChat(chatId, key) {
   const cached = mediaCache.get(chatId)?.get(key);
-  return cached ?? MEDIA_PATHS[key];
+  return cached ?? Input.fromLocalFile(MEDIA_PATHS[key]);
 }
 
 function captureFileId(chatId, key, msg) {
@@ -2472,6 +2472,9 @@ function startWithRetry() {
   const isProduction = process.env.NODE_ENV === "production" || process.env.RENDER || process.env.FLY_APP_NAME || process.env.CPANEL;
   const hasWebhookUrl = process.env.WEBHOOK_URL && !process.env.RENDER;
 
+  console.log("ℹ️  startWithRetry called - isProduction:", isProduction, "hasWebhookUrl:", hasWebhookUrl);
+  console.log("ℹ️  Environment: RENDER=" + (process.env.RENDER || "unset") + ", NODE_ENV=" + (process.env.NODE_ENV || "unset") + ", WEBHOOK_URL=" + (process.env.WEBHOOK_URL || "unset"));
+
   if (hasWebhookUrl) {
     const webhookBase = process.env.WEBHOOK_URL;
     const webhookPath = "/webhook";
@@ -2503,10 +2506,26 @@ function isConflict(err) {
 
 function launchPolling() {
   startupInfo.mode = "polling";
+  console.log("ℹ️  Launching polling mode...");
+  console.log("ℹ️  RENDER env:", process.env.RENDER || "unset");
+  console.log("ℹ️  NODE_ENV env:", process.env.NODE_ENV || "unset");
   try {
-    bot.launch({ dropPendingUpdates: true }, () => {
+    bot.launch({ dropPendingUpdates: true }).then(() => {
       retryCount = 0;
       console.log("🚀 Bot is online with polling!");
+    }).catch(async (err) => {
+      console.error("❌ Bot launch failed:", err?.message || err);
+      if (isConflict(err) && retryCount < MAX_RETRIES) {
+        retryCount++;
+        console.warn(`⚠️  Polling conflict (${retryCount}/${MAX_RETRIES}). Retrying in ${RETRY_DELAY_MS}ms...`);
+        setTimeout(launchPolling, RETRY_DELAY_MS);
+      } else if (retryCount < MAX_RETRIES) {
+        retryCount++;
+        console.warn(`⚠️  Retry attempt (${retryCount}/${MAX_RETRIES}) in ${RETRY_DELAY_MS}ms...`);
+        setTimeout(launchPolling, RETRY_DELAY_MS);
+      } else {
+        console.error("❌ Max retries reached. Bot could not start.");
+      }
     });
   } catch (e) {
     console.error("Bot launch failed:", e?.message || e);
@@ -2514,6 +2533,7 @@ function launchPolling() {
     return;
   }
   bot.catch((err) => {
+    console.error("❌ Bot catch handler:", err?.message || err);
     if (isConflict(err) && retryCount < MAX_RETRIES) {
       retryCount++;
       console.warn(`⚠️  Polling conflict (${retryCount}/${MAX_RETRIES}). Retrying in ${RETRY_DELAY_MS}ms...`);
@@ -2526,7 +2546,11 @@ const MAX_RETRIES = 5;
 const RETRY_DELAY_MS = 3000;
 let retryCount = 0;
 
+console.log("ℹ️  require.main === module:", require.main === module);
 if (require.main === module) {
+  startWithRetry();
+} else {
+  console.log("ℹ️  Running as module - forcing startWithRetry anyway...");
   startWithRetry();
 }
 
