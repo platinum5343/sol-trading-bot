@@ -13,8 +13,22 @@ if (!TOKEN) {
 const bot = new Telegraf(TOKEN);
 
 const startupInfo = { mode: "starting", timestamp: new Date().toISOString() };
+const debugLog = [];
 
 const server = http.createServer((req, res) => {
+  if (req.method === "GET" && req.url === "/debug") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ 
+      startupInfo, 
+      debugLog: debugLog.slice(-20),
+      env: {
+        NODE_ENV: process.env.NODE_ENV,
+        RENDER: process.env.RENDER ? "set" : "unset",
+        PORT: process.env.PORT
+      }
+    }));
+    return;
+  }
   if (req.method === "POST" && (req.url === "/webhook" || req.url === "/sol_tradingbot/webhook")) {
     console.log("🔔 Webhook received: " + req.url + " at " + new Date().toISOString());
     let body = "";
@@ -163,11 +177,18 @@ async function replyWithCachedPhoto(ctx, key, extra) {
   const replyMarkup = extra?.reply_markup;
   const isProduction = process.env.RENDER || process.env.NODE_ENV === "production";
   
+  debugLog.push({ time: new Date().toISOString(), action: "replyWithCachedPhoto", key, isProduction, chatId: ctx?.chat?.id, captionLength: caption.length });
+  
   if (isProduction) {
-    console.log("Sending text-only response (production mode) for:", key);
-    const replyResult = await ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
-    console.log("Reply sent successfully:", replyResult?.message_id);
-    return replyResult;
+    debugLog.push({ time: new Date().toISOString(), action: "sending text reply", key });
+    try {
+      const replyResult = await ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
+      debugLog.push({ time: new Date().toISOString(), action: "text reply sent", message_id: replyResult?.message_id });
+      return replyResult;
+    } catch (e) {
+      debugLog.push({ time: new Date().toISOString(), action: "text reply failed", error: e?.message || e?.toString() });
+      throw e;
+    }
   }
   
   try {
@@ -175,11 +196,11 @@ async function replyWithCachedPhoto(ctx, key, extra) {
     captureFileId(ctx?.chat?.id ?? 0, key, res);
     return res;
   } catch (err) {
-    console.error(`⚠️  Failed to send photo (${key}), falling back to text:`, err?.message || err);
+    debugLog.push({ time: new Date().toISOString(), action: "photo send failed", error: err?.message || err?.toString() });
     try {
       return await ctx.reply(caption, { parse_mode: parseMode, reply_markup: replyMarkup });
     } catch (fallbackErr) {
-      console.error("Fallback text also failed:", fallbackErr?.message || fallbackErr);
+      debugLog.push({ time: new Date().toISOString(), action: "fallback failed", error: fallbackErr?.message || fallbackErr?.toString() });
       return null;
     }
   }
