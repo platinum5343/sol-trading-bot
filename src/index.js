@@ -1272,15 +1272,25 @@ async function handleStakeToken(ctx, state, token) {
 
 async function handleDashCopy(ctx, state) {
   state.currentView = "copy_trade";
-  const tradersText = MOCK_TRADERS.map((t, i) =>
-    `${i + 1}. ${t.avatar} ${t.name.replace(/@/g, "").replace(/_/g, "\\_")} — ${t.performance}`
-  ).join("\n");
-  return replyWithCachedPhoto(ctx, "copy", {
-    caption:
-      "👥 *Copy Trading*\n\n" +
-      "Follow traders and mirror their trades:\n\n" +
-      tradersText +
-      "\n\nSelect a trader to copy:",
+  const promises = MOCK_TRADERS.map((t, i) => {
+    const traderName = t.name.replace(/@/g, "").replace(/_/g, "\\_");
+    const caption =
+      `👤 ${traderName}\n` +
+      `${t.description}\n` +
+      `📊 Performance: ${t.performance}\n` +
+      `💰 Min: ${t.min} (${t.minSol} / ${t.minSol.replace("≈", "≈")} ${t.minEth})\n` +
+      `💰 Max: ${t.max} (${t.maxSol} / ${t.maxEth})`;
+    const imageKey = t.image || `copytrader${(i % 3) + 1}`;
+    return replyWithCachedPhoto(ctx, imageKey, {
+      caption: caption,
+      parse_mode: "Markdown",
+      reply_markup: copyTradeKeyboard(t.id).reply_markup,
+    }).catch(e => {
+      console.error(`Failed to send trader ${t.name}:`, e?.message || e);
+    });
+  });
+  await Promise.all(promises);
+  await ctx.reply("Select a trader to copy:", {
     parse_mode: "Markdown",
     reply_markup: copyTradersKeyboard().reply_markup,
   });
