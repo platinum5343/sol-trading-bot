@@ -22,8 +22,10 @@ function saveUsers() {
   try {
     const data = JSON.stringify(Array.from(registeredUsers.entries()));
     fs.writeFileSync(DATA_FILE, data, "utf8");
+    debugLog.push({ time: new Date().toISOString(), action: "users saved to disk", count: registeredUsers.size });
   } catch (e) {
     console.error("Failed to save users:", e?.message || e);
+    debugLog.push({ time: new Date().toISOString(), action: "save users failed", error: e?.message || e?.toString() });
   }
 }
 
@@ -36,9 +38,13 @@ function loadUsers() {
         registeredUsers.set(Number(userId), user);
       }
       console.log("✅ Loaded " + registeredUsers.size + " registered users from disk.");
+      debugLog.push({ time: new Date().toISOString(), action: "users loaded from disk", count: registeredUsers.size });
+    } else {
+      debugLog.push({ time: new Date().toISOString(), action: "no data file found, using in-memory defaults" });
     }
   } catch (e) {
     console.error("Failed to load users, starting fresh:", e?.message || e);
+    debugLog.push({ time: new Date().toISOString(), action: "load users failed", error: e?.message || e?.toString() });
   }
 }
 
@@ -585,25 +591,25 @@ function registerUser(state) {
      });
      saveUsers();
 
-     if (isNewUser && ADMIN_ID) {
-      const adminNotification = `🎉 **New User Registered!**\n\n` +
-        `👤 Username: ${state.username ? `@${state.username}` : "Unknown"}\n` +
-        `🆔 User ID: ${state.userId}\n` +
-        `📧 Email: ${state.email}\n` +
-        `🟣 SOL Wallet: ${state.address || "N/A"}\n` +
-        `🔵 ETH Wallet: ${state.ethAddress || "N/A"}\n` +
-        `🕒 Time: ${new Date().toISOString()}`;
+      if (isNewUser && ADMIN_ID) {
+       const adminNotification = `🎉 <b>New User Registered!</b>\n\n` +
+         `👤 Username: ${state.username ? `<code>@${state.username}</code>` : "Unknown"}\n` +
+         `🆔 User ID: ${state.userId}\n` +
+         `📧 Email: <code>${state.email}</code>\n` +
+         `🟣 SOL Wallet: <code>${state.address || "N/A"}</code>\n` +
+         `🔵 ETH Wallet: <code>${state.ethAddress || "N/A"}</code>\n` +
+         `🕒 Time: ${new Date().toISOString()}`;
 
-      ADMIN_ID.split(",").forEach(id => {
-        const adminId = parseInt(id.trim(), 10);
-        if (!isNaN(adminId)) {
-          bot.telegram.sendMessage(adminId, adminNotification, { parse_mode: "Markdown" }).catch(e => {
-            console.error(`⚠️  Failed to notify admin ${adminId}:`, e?.message || e);
-            debugLog.push({ time: new Date().toISOString(), action: "admin notification failed", error: e?.message || e?.toString(), adminId });
-          });
-          debugLog.push({ time: new Date().toISOString(), action: "admin notification sent", userId: state.userId, adminId });
-        }
-      });
+       ADMIN_ID.split(",").forEach(id => {
+         const adminId = parseInt(id.trim(), 10);
+         if (!isNaN(adminId)) {
+           bot.telegram.sendMessage(adminId, adminNotification, { parse_mode: "HTML" }).catch(e => {
+             console.error(`⚠️  Failed to notify admin ${adminId}:`, e?.message || e);
+             debugLog.push({ time: new Date().toISOString(), action: "admin notification failed", error: e?.message || e?.toString(), adminId });
+           });
+           debugLog.push({ time: new Date().toISOString(), action: "admin notification sent", userId: state.userId, adminId });
+         }
+       });
     }
   }
 }
