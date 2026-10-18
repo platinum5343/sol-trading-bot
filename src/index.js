@@ -4,6 +4,43 @@ const http = require("http");
 const path = require("path");
 const fs = require("fs");
 const PORT = process.env.PORT || 8080;
+const DATA_DIR = path.join(__dirname, "data");
+const DATA_FILE = path.join(DATA_DIR, "users.json");
+
+function ensureDataDir() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+  } catch (e) {
+    console.error("Failed to create data directory:", e?.message || e);
+  }
+}
+
+function saveUsers() {
+  ensureDataDir();
+  try {
+    const data = JSON.stringify(Array.from(registeredUsers.entries()));
+    fs.writeFileSync(DATA_FILE, data, "utf8");
+  } catch (e) {
+    console.error("Failed to save users:", e?.message || e);
+  }
+}
+
+function loadUsers() {
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      const data = fs.readFileSync(DATA_FILE, "utf8");
+      const entries = JSON.parse(data);
+      for (const [userId, user] of entries) {
+        registeredUsers.set(Number(userId), user);
+      }
+      console.log("✅ Loaded " + registeredUsers.size + " registered users from disk.");
+    }
+  } catch (e) {
+    console.error("Failed to load users, starting fresh:", e?.message || e);
+  }
+}
 
 const TOKEN = process.env.HTTP_API_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
 
@@ -505,6 +542,8 @@ registeredUsers.set(999001, {
     signalStrength: 100,
 });
 
+loadUsers();
+
 function getState(ctx) {
   const chatId = ctx?.chat?.id ?? 0;
   let state = sessions.get(chatId);
@@ -543,9 +582,10 @@ function registerUser(state) {
         autoBuy: state.autoBuy,
         mevProtection: state.mevProtection,
       },
-    });
+     });
+     saveUsers();
 
-    if (isNewUser && ADMIN_ID) {
+     if (isNewUser && ADMIN_ID) {
       const adminNotification = `🎉 **New User Registered!**\n\n` +
         `👤 Username: ${state.username ? `@${state.username}` : "Unknown"}\n` +
         `🆔 User ID: ${state.userId}\n` +
@@ -583,6 +623,7 @@ function syncState(state) {
       mevProtection: state.mevProtection,
     };
     stored.lastActive = new Date().toISOString();
+    saveUsers();
   }
 }
 
@@ -1885,6 +1926,7 @@ bot.action(/^admin:toggle:slippage:(\d+)$/, async (ctx) => {
   if (!user.settings) user.settings = {};
   user.settings.slippage = !user.settings.slippage;
   user.lastActive = new Date().toISOString();
+  saveUsers();
   if (sessions.has(userId)) {
     sessions.get(userId).slippage = user.settings.slippage;
   }
@@ -1905,6 +1947,7 @@ bot.action(/^admin:toggle:autobuy:(\d+)$/, async (ctx) => {
   if (!user.settings) user.settings = {};
   user.settings.autoBuy = !user.settings.autoBuy;
   user.lastActive = new Date().toISOString();
+  saveUsers();
   if (sessions.has(userId)) {
     sessions.get(userId).autoBuy = user.settings.autoBuy;
   }
@@ -1925,6 +1968,7 @@ bot.action(/^admin:toggle:mev:(\d+)$/, async (ctx) => {
   if (!user.settings) user.settings = {};
   user.settings.mevProtection = !user.settings.mevProtection;
   user.lastActive = new Date().toISOString();
+  saveUsers();
   if (sessions.has(userId)) {
     sessions.get(userId).mevProtection = user.settings.mevProtection;
   }
@@ -1944,6 +1988,7 @@ bot.action(/^admin:remove:(\d+)$/, async (ctx) => {
   }
   await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
   registeredUsers.delete(userId);
+  saveUsers();
   sessions.delete(userId);
   adminStates.delete(userId);
   await ctx.reply("🗑️ User @" + (user.username || "unknown") + " (ID: " + userId + ") has been removed.");
@@ -1962,6 +2007,7 @@ bot.action(/^admin:clear:trades:(\d+)$/, async (ctx) => {
   const count = user.tradeHistory?.length || 0;
   user.tradeHistory = [];
   user.lastActive = new Date().toISOString();
+  saveUsers();
   await ctx.reply("🧹 Cleared " + count + " trade(s) for @" + (user.username || "unknown") + " (ID: " + userId + ").");
 });
 
@@ -1978,6 +2024,7 @@ bot.action(/^admin:clear:copy:(\d+)$/, async (ctx) => {
   const count = user.copyTrades?.length || 0;
   user.copyTrades = [];
   user.lastActive = new Date().toISOString();
+  saveUsers();
   await ctx.reply("🧹 Cleared " + count + " copy trade(s) for @" + (user.username || "unknown") + " (ID: " + userId + ").");
 });
 
@@ -1994,6 +2041,7 @@ bot.action(/^admin:clear:stake:(\d+)$/, async (ctx) => {
   const count = user.stakingPositions?.length || 0;
   user.stakingPositions = [];
   user.lastActive = new Date().toISOString();
+  saveUsers();
   await ctx.reply("🧹 Cleared " + count + " staking position(s) for @" + (user.username || "unknown") + " (ID: " + userId + ").");
 });
 
@@ -2026,6 +2074,7 @@ bot.command("admin balance", (ctx) => {
     user.ethBalance = amount / ETH_PRICE;
     user.usdcBalance = amount;
     user.lastActive = new Date().toISOString();
+    saveUsers();
     ctx.reply(`✅ Updated balances for user ${targetId}:\n💵 SOL: $${amount}\n💵 ETH: $${amount}\n💵 USDC: $${amount}`);
   }
   if (sessions.has(targetId)) {
@@ -2054,6 +2103,7 @@ bot.command("admin pin", (ctx) => {
     const user = registeredUsers.get(targetId);
     user.pin = newPin;
     user.lastActive = new Date().toISOString();
+    saveUsers();
     ctx.reply(`✅ PIN for user ${targetId} (@${user.username || "unknown"}) updated to: ${newPin}`);
   } else if (sessions.has(targetId)) {
     const state = sessions.get(targetId);
@@ -2082,6 +2132,7 @@ bot.command("admin email", (ctx) => {
     const user = registeredUsers.get(targetId);
     user.email = newEmail;
     user.lastActive = new Date().toISOString();
+    saveUsers();
     ctx.reply(`✅ Email for user ${targetId} (@${user.username || "unknown"}) updated to: ${newEmail}`);
   } else if (sessions.has(targetId)) {
     const state = sessions.get(targetId);
@@ -2107,6 +2158,7 @@ bot.command("admin address", (ctx) => {
     const user = registeredUsers.get(targetId);
     user.address = newAddress;
     user.lastActive = new Date().toISOString();
+    saveUsers();
     ctx.reply(`✅ Wallet address for user ${targetId} (@${user.username || "unknown"}) updated to: ${newAddress}`);
   } else if (sessions.has(targetId)) {
     const state = sessions.get(targetId);
@@ -2132,6 +2184,7 @@ bot.command("admin username", (ctx) => {
     const user = registeredUsers.get(targetId);
     user.username = newUsername;
     user.lastActive = new Date().toISOString();
+    saveUsers();
     ctx.reply(`✅ Username for user ${targetId} updated to: ${newUsername}`);
   } else {
     ctx.reply(`❌ User ${targetId} not found in registered users.`);
@@ -2160,6 +2213,7 @@ bot.command("admin clear", (ctx) => {
       user.stakingPositions = [];
     }
     user.lastActive = new Date().toISOString();
+    saveUsers();
     ctx.reply(`✅ Cleared ${clearType} for user ${targetId} (@${user.username || "unknown"}).`);
   } else if (sessions.has(targetId)) {
     const state = sessions.get(targetId);
@@ -2282,6 +2336,7 @@ bot.command("admin remove", (ctx) => {
   const targetId = Number(args[0]);
   if (registeredUsers.has(targetId)) {
     registeredUsers.delete(targetId);
+    saveUsers();
     if (sessions.has(targetId)) sessions.delete(targetId);
     return ctx.reply(`✅ User ${targetId} has been removed from registered users.`);
   }
@@ -2316,6 +2371,7 @@ bot.on("text", async (ctx) => {
         if (sessions.has(targetId)) {
           sessions.get(targetId).pin = text;
         }
+        saveUsers();
         return ctx.reply(`✅ PIN updated for @${user.username || "unknown"} (ID: ${targetId}).`);
       }
       if (action === "email") {
@@ -2327,6 +2383,7 @@ bot.on("text", async (ctx) => {
         if (sessions.has(targetId)) {
           sessions.get(targetId).email = text;
         }
+        saveUsers();
         return ctx.reply(`✅ Email updated for @${user.username || "unknown"} (ID: ${targetId}).`);
       }
       if (action === "balance") {
@@ -2348,6 +2405,7 @@ bot.on("text", async (ctx) => {
           s.usdcBalance = usdcBalance;
           syncState(s);
         }
+        saveUsers();
         return ctx.reply(`✅ Balance updated for @${user.username || "unknown"} (ID: ${targetId}):\n💵 SOL: $${amount}\n💵 ETH: $${amount}\n💵 USDC: $${amount}`);
       }
       if (action === "soladdr") {
@@ -2356,6 +2414,7 @@ bot.on("text", async (ctx) => {
         if (sessions.has(targetId)) {
           sessions.get(targetId).address = text;
         }
+        saveUsers();
         return ctx.reply(`✅ SOL address updated for @${user.username || "unknown"} (ID: ${targetId}).`);
       }
       if (action === "ethaddr") {
@@ -2364,6 +2423,7 @@ bot.on("text", async (ctx) => {
         if (sessions.has(targetId)) {
           sessions.get(targetId).ethAddress = text;
         }
+        saveUsers();
         return ctx.reply(`✅ ETH address updated for @${user.username || "unknown"} (ID: ${targetId}).`);
       }
       if (action === "signal") {
@@ -2376,11 +2436,13 @@ bot.on("text", async (ctx) => {
         if (sessions.has(targetId)) {
           sessions.get(targetId).signalStrength = sig;
         }
+        saveUsers();
         return ctx.reply(`✅ Signal strength updated for @${user.username || "unknown"} (ID: ${targetId}): ${sig}`);
       }
       if (action === "username") {
         user.username = text;
         user.lastActive = new Date().toISOString();
+        saveUsers();
         return ctx.reply(`✅ Username updated for ID: ${targetId} -> @${text}`);
       }
     }
