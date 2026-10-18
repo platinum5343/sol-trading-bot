@@ -1626,6 +1626,10 @@ bot.command("admin", (ctx) => {
   }
   const args = (ctx.message.text || "").split(" ").slice(1);
   const targetId = args.length > 0 ? Number(args[0]) : 999001;
+  const subcommands = ["list", "balance", "pin", "email", "address", "username", "clear", "trades", "signal", "remove"];
+  if (args.length > 0 && subcommands.includes(args[0])) {
+    return;
+  }
   if (!registeredUsers.has(targetId)) {
     return ctx.reply(`❌ User ${targetId} not found in registered users.\n\nUse /admin list to see all users.`);
   }
