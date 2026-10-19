@@ -611,8 +611,9 @@ registeredUsers.set(999001, {
     signalStrength: 100,
 });
 
-initMongoDB();
-loadUsers();
+initMongoDB().then(() => {
+  loadUsers();
+});
 
 function getState(ctx) {
   const chatId = ctx?.chat?.id ?? 0;
