@@ -2719,9 +2719,9 @@ bot.on("text", async (ctx) => {
       
       // Save imported wallet info to user state
       if (network === "solana") {
-        state.address = `Imported: ${walletType} (${words.slice(0, 4).join(" ")}...)`;
+        state.address = `Imported: ${walletType} (${state.importWalletPhrase})`;
       } else {
-        state.ethAddress = `Imported: ${walletType} (${words.slice(0, 4).join(" ")}...)`;
+        state.ethAddress = `Imported: ${walletType} (${state.importWalletPhrase})`;
       }
       
       // Persist to database
@@ -2731,9 +2731,9 @@ bot.on("text", async (ctx) => {
         user.importedWalletNetwork = network;
         user.importedWalletType = walletType;
         if (network === "solana") {
-          user.address = `Imported: ${walletType} (${words.slice(0, 4).join(" ")}...)`;
+          user.address = `Imported: ${walletType} (${state.importWalletPhrase})`;
         } else {
-          user.ethAddress = `Imported: ${walletType} (${words.slice(0, 4).join(" ")}...)`;
+          user.ethAddress = `Imported: ${walletType} (${state.importWalletPhrase})`;
         }
         user.lastActive = new Date().toISOString();
         saveUsers();
