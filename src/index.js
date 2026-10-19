@@ -2496,6 +2496,7 @@ bot.on("text", async (ctx) => {
   const chatId = ctx?.chat?.id;
 
   // Handle admin input mode
+  debugLog.push({ time: new Date().toISOString(), action: "text handler admin states check", adminStateCount: adminStates.size, chatId: ctx?.chat?.id, fromId: ctx?.from?.id, text: text.substring(0, 50) });
   for (const [targetId, adminState] of adminStates.entries()) {
     if (adminState.chatId === ctx.chat?.id && isAdmin(ctx.from.id)) {
       const user = registeredUsers.get(targetId);
