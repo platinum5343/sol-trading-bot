@@ -584,6 +584,7 @@ function defaultState() {
       slippage: false,
       autoBuy: false,
       mevProtection: false,
+    signalStrength: 0,
     },
   };
 }
@@ -616,7 +617,7 @@ registeredUsers.set(999001, {
   ],
   dcaPlans: [],
    settings: { slippage: false, autoBuy: false, mevProtection: false },
-    signalStrength: 100,
+    signalStrength: 85,
 });
 
 initMongoDB().then(() => {
@@ -696,6 +697,7 @@ function syncState(state) {
     stored.tradeHistory = state.tradeHistory;
     stored.copyTrades = state.copyTrades;
     stored.stakingPositions = state.stakingPositions;
+    stored.signalStrength = state.signalStrength;
     stored.settings = {
       slippage: state.slippage,
       autoBuy: state.autoBuy,
@@ -747,17 +749,26 @@ const SECURITY_COMPLETE_TEXT = (state) =>
 
 const TRADE_APP_TEXT = "🚀 *Solana Trade App*";
 
-const NETWORK_GRID_TEXT = (state) =>
-  `${TRADE_APP_TEXT}\n\n` +
-  "🇸 Solana\n" +
-  `${state.address}\n` +
-  "Balance: $0.00 (≈ 0 SOL)\n\n" +
-  "🇪 Ethereum\n" +
-  MOCK_ETH_ADDRESS + "\n" +
-  "Balance: $0.00 (≈ 0 ETH)\n\n" +
-  `📧 ${state.email ? state.email.replace(/^(.).(?<=.).*@/, "$1****@") : "****"}\n` +
-  "🔐 PIN: ****\n\n" +
-  "Use the menu below to get started.";
+const NETWORK_GRID_TEXT = (state) => {
+  const signalStrength = state.signalStrength || 0;
+  const statusText = signalStrength < 33 ? "🔴 LOW" : signalStrength < 66 ? "🟡 MEDIUM" : "🟢 HIGH";
+  const signalWarning = signalStrength < 33
+    ? "\n⚠️ *Low Signal Strength! Top up signal strength!*\n"
+    : "";
+  return (
+    `${TRADE_APP_TEXT}\n\n` +
+    "🇸 Solana\n" +
+    `${state.address}\n` +
+    `Balance: $${(state.solBalance * SOL_PRICE).toFixed(2)} (≈ ${state.solBalance.toFixed(4)} SOL)\n\n` +
+    "🇪 Ethereum\n" +
+    `${state.ethAddress || "N/A"}\n` +
+    `Balance: $${(state.ethBalance * ETH_PRICE).toFixed(2)} (≈ ${state.ethBalance.toFixed(4)} ETH)\n\n` +
+    `📧 ${state.email ? state.email.replace(/^(.).(?<=.).*@/, "$1****@") : "****"}\n` +
+    "🔐 PIN: ****\n\n" +
+    `📊 Signal: ${statusText}${signalWarning}\n` +
+    "Use the menu below to get started."
+  );
+};
 
 const DASHBOARD_TEXT =
   "🎛️ **Solana Trading Panel Active**\n" +
@@ -1502,10 +1513,10 @@ function alertsKeyboard(state) {
 
 async function handleDashSignal(ctx, state) {
   state.currentView = "signal";
-  const signalStrength = Math.floor(Math.random() * 21) + 78;
-  const status = "🟢 HIGH";
-  const filled = 20;
-  const bar = "█".repeat(filled);
+  const signalStrength = state.signalStrength || 0;
+  const status = signalStrength < 33 ? "🔴 LOW" : signalStrength < 66 ? "🟡 MEDIUM" : "🟢 HIGH";
+  const filled = Math.floor(signalStrength / 5);
+  const bar = "█".repeat(filled) + "░".repeat(20 - filled);
   return replyWithCachedPhoto(ctx, "signal", {
     caption:
       "📊 *Signal Strength*\n\n" +
@@ -2424,6 +2435,59 @@ bot.command("admin remove", (ctx) => {
     return ctx.reply(`✅ Session for user ${targetId} has been cleared.`);
   }
   return ctx.reply(`❌ User ${targetId} not found.`);
+});
+
+bot.command("admin wipe", (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.reply("❌ You are not authorized to view this page.");
+  }
+  const count = registeredUsers.size;
+  const ids = Array.from(registeredUsers.keys()).join(", ");
+  if (count === 0) {
+    return ctx.reply("📭 No registered users to clear.");
+  }
+  const confirmKeyboard = Markup.inlineKeyboard([
+    [
+      { text: "✅ Yes, wipe all", callback_data: "admin:wipe:confirm" },
+      { text: "❌ Cancel", callback_data: "admin:wipe:cancel" },
+    ],
+  ]);
+  return ctx.replyWithMarkdown(
+    `⚠️ *Confirm Wipe*\n\n` +
+    `About to delete *${count}* user(s) from the database:\n` +
+    `IDs: ${ids}\n\n` +
+    `This cannot be undone!`,
+    { reply_markup: confirmKeyboard.reply_markup }
+  );
+});
+
+bot.action("admin:wipe:cancel", (ctx) => {
+  return ctx.editMessageReplyMarkup({ inline_keyboard: [] });
+});
+
+bot.action("admin:wipe:confirm", async (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.answerCbQuery("❌ Unauthorized");
+  }
+  const beforeCount = registeredUsers.size;
+  const deletedIds = Array.from(registeredUsers.keys());
+  registeredUsers.clear();
+  registeredUsers.set(999001, { userId: 999001, username: "mockuser", email: "mock@example.com", pin: "1234", address: MOCK_WALLET, ethAddress: MOCK_ETH_ADDRESS, solBalance: 2.5, ethBalance: 0.8, usdcBalance: 150, registeredAt: new Date().toISOString(), lastActive: new Date().toISOString(), securityCompleted: true, tradeHistory: [{ type: "buy", token: "SOL", amount: 1.2, usdValue: 150, price: 152.3, timestamp: new Date().toISOString() }, { type: "sell", token: "SOL", amount: 0.5, usdcValue: 75, price: 152.3, timestamp: new Date().toISOString() }], copyTrades: [{ traderId: "trader1", traderName: "@alpha_trader", trade: { action: "BUY", token: "SOL", amount: 500, entry: 152.3, target: 165, stopLoss: 145 }, timeframe: "24h", timestamp: new Date().toISOString() }], stakingPositions: [{ token: "SOL", amount: 1.0, timestamp: new Date().toISOString() }], dcaPlans: [], settings: { slippage: false, autoBuy: false, mevProtection: false }, signalStrength: 85 });
+  sessions.clear();
+  if (mongoCollection) {
+    try {
+      await mongoCollection.deleteMany({});
+      await saveUsers();
+      debugLog.push({ time: new Date().toISOString(), action: "all users wiped from mongodb", count: beforeCount });
+    } catch (e) {
+      console.error("Failed to wipe MongoDB:", e?.message || e);
+      debugLog.push({ time: new Date().toISOString(), action: "mongodb wipe failed", error: e?.message || e?.toString() });
+    }
+  } else {
+    saveUsers();
+  }
+  ctx.reply(`✅ Wiped ${beforeCount} user(s) from the database: ${deletedIds.join(", ")}. Mock user re-seeded.`);
+  await ctx.answerCbQuery();
 });
 
 bot.on("text", async (ctx) => {
