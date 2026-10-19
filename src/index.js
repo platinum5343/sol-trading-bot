@@ -2771,39 +2771,21 @@ bot.on("text", async (ctx) => {
     });
    }
 
-   if (/^\/start\b/.test(text)) {
-     state.awaitingEmail = false;
-     state.awaitingPin = false;
-     state.awaitingPinConfirm = false;
-     state.awaitingSwapAmount = false;
-     state.swapPair = null;
-     state.awaitingWithdrawAmount = false;
-     state.withdrawToken = null;
-     state.awaitingStakeAmount = false;
-     state.stakeToken = null;
-     state.buyToken = null;
-     state.sellToken = null;
-     state.currentView = null;
-     state.pendingAction = null;
+if (/^\/start\b/.test(text)) {
+      state.awaitingEmail = false;
+      state.awaitingPin = false;
+      state.awaitingPinConfirm = false;
+      state.awaitingSwapAmount = false;
+      state.swapPair = null;
+      state.awaitingWithdrawAmount = false;
+      state.withdrawToken = null;
+      state.awaitingStakeAmount = false;
+      state.stakeToken = null;
+      state.buyToken = null;
+      state.sellToken = null;
+      state.currentView = null;
+      state.pendingAction = null;
       state.selectedTrader = null;
-     return replyWithCachedPhoto(ctx, "welcome", {
-       caption: WELCOME_TEXT,
-       parse_mode: "Markdown",
-       reply_markup: welcomeKeyboard().reply_markup,
-     });
-   }
-
-   if (
-     text === "✨ Generate Wallet" ||
-     text === "📥 Import Wallet" ||
-     text === "🟣 Solana" ||
-     text === "🔵 Ethereum"
-   ) {
-     const handler = dispatchNav(text, state);
-     if (handler) return handler(ctx);
-   }
-
-    if (!state.securityCompleted) {
       return replyWithCachedPhoto(ctx, "welcome", {
         caption: WELCOME_TEXT,
         parse_mode: "Markdown",
@@ -2811,21 +2793,26 @@ bot.on("text", async (ctx) => {
       });
     }
 
-   const navHandler = dispatchNav(text, state);
-   if (navHandler) {
-     state.awaitingSwapAmount = false;
-     state.swapPair = null;
-     state.awaitingWithdrawAmount = false;
-     state.withdrawToken = null;
-     state.awaitingStakeAmount = false;
-     state.stakeToken = null;
-     state.buyToken = null;
-     state.sellToken = null;
-     state.pendingAction = null;
-     return navHandler(ctx);
-   }
+    const navHandler = dispatchNav(text, state);
+    if (navHandler) {
+      state.awaitingSwapAmount = false;
+      state.swapPair = null;
+      state.awaitingWithdrawAmount = false;
+      state.withdrawToken = null;
+      state.awaitingStakeAmount = false;
+      state.stakeToken = null;
+      return navHandler(ctx);
+    }
 
-   if (state.awaitingSwapAmount) {
+if (!state.securityCompleted) {
+      return replyWithCachedPhoto(ctx, "welcome", {
+        caption: WELCOME_TEXT,
+        parse_mode: "Markdown",
+        reply_markup: welcomeKeyboard().reply_markup,
+      });
+    }
+
+    if (state.awaitingSwapAmount) {
     await deleteUserMessage(ctx);
     const amount = parseFloat(text);
     if (isNaN(amount) || amount <= 0) {
