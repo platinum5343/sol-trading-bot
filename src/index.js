@@ -94,10 +94,11 @@ async function initMongoDB() {
   const mongoUri = process.env.MONGODB_URI;
   if (!mongoUri) {
     console.log("⚠️  MONGODB_URI not set, using file-based persistence.");
+    debugLog.push({ time: new Date().toISOString(), action: "mongodb not configured, using file-based" });
     return;
   }
   try {
-    const client = new MongoClient(mongoUri, { useNewUrlParser: true, useUnifiedTopology: true });
+    const client = new MongoClient(mongoUri);
     await client.connect();
     mongoDb = client.db("soltradingbot");
     mongoCollection = mongoDb.collection("users");
@@ -105,6 +106,7 @@ async function initMongoDB() {
     debugLog.push({ time: new Date().toISOString(), action: "mongodb connected" });
   } catch (e) {
     console.error("❌ Failed to connect to MongoDB, falling back to file-based:", e?.message || e);
+    debugLog.push({ time: new Date().toISOString(), action: "mongodb connection failed", error: e?.message || e?.toString() });
     mongoDb = null;
     mongoCollection = null;
   }
@@ -129,11 +131,16 @@ const server = http.createServer((req, res) => {
     res.end(JSON.stringify({ 
       startupInfo, 
       debugLog: debugLog.slice(-20),
-      env: {
-        NODE_ENV: process.env.NODE_ENV,
-        RENDER: process.env.RENDER ? "set" : "unset",
-        PORT: process.env.PORT
-      }
+       env: {
+         NODE_ENV: process.env.NODE_ENV,
+         RENDER: process.env.RENDER ? "set" : "unset",
+         PORT: process.env.PORT,
+         MONGODB_URI: process.env.MONGODB_URI ? "set" : "unset",
+       },
+       mongodb: {
+         connected: mongoCollection !== null,
+         userCount: registeredUsers.size,
+       }
     }));
     return;
   }
