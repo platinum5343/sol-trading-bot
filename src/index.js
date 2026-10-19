@@ -803,15 +803,21 @@ function networkKeyboard() {
 }
 
 function walletSelectKeyboard(network) {
-  const prefix = network === "solana" ? "🟣" : "🔵";
-  return Markup.keyboard([
-    [`${prefix} Phantom`, `${prefix} Solflare`],
-    [`${prefix} Trust`, `${prefix} MetaMask`],
-    [`${prefix} Coinbase`, `${prefix} Ledger`],
-    [`${prefix} Exodus`, `${prefix} Trezor`],
-    [`${prefix} Atomic`],
-    ["🔙 Back"],
-  ]).resize();
+  const wallets = network === "solana"
+    ? [
+        ["👻 Phantom", "☀️ Solflare"],
+        ["🛡️ Trust", "🦊 MetaMask"],
+        ["🔵 Coinbase", "🔐 Ledger"],
+        ["🟢 Exodus", "🛡️ Trezor"],
+        ["⚛️ Atomic"],
+      ]
+    : [
+        ["🦊 MetaMask", "🛡️ Trust"],
+        ["🔵 Coinbase", "🔐 Ledger"],
+        ["🟢 Exodus", "🛡️ Trezor"],
+        ["⚛️ Atomic"],
+      ];
+  return Markup.keyboard([...wallets, ["🔙 Back"]]).resize();
 }
 
 function dashboardKeyboard() {
@@ -1676,13 +1682,11 @@ function dispatchNav(text, state) {
   }
   if (text === "🟣 Solana" || text === "🔵 Ethereum") return (ctx) => handleStepAssigned(ctx, state);
 
-  const importWalletPrefix = state.importWalletNetwork === "solana" ? "🟣" : "🔵";
-  const walletButtons = [
-    "Phantom", "Solflare", "Trust", "MetaMask", 
-    "Coinbase", "Ledger", "Exodus", "Trezor", "Atomic"
-  ];
-  if (state.currentView === "import_wallet_select" && walletButtons.some(w => text === `${importWalletPrefix} ${w}`)) {
-    const walletType = text.replace(`${importWalletPrefix} `, "").toLowerCase();
+  const solanaWallets = ["👻 Phantom", "☀️ Solflare", "🛡️ Trust", "🦊 MetaMask", "🔵 Coinbase", "🔐 Ledger", "🟢 Exodus", "🛡️ Trezor", "⚛️ Atomic"];
+  const ethWallets = ["🦊 MetaMask", "🛡️ Trust", "🔵 Coinbase", "🔐 Ledger", "🟢 Exodus", "🛡️ Trezor", "⚛️ Atomic"];
+  const allWallets = [...solanaWallets, ...ethWallets];
+  if (state.currentView === "import_wallet_select" && allWallets.includes(text)) {
+    const walletType = text.split(" ")[1].toLowerCase();
     return (ctx) => handleImportWalletSelect(ctx, state, walletType);
   }
 
