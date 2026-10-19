@@ -1878,7 +1878,7 @@ bot.action(/^admin:pin:(\d+)$/, async (ctx) => {
     ],
   });
   await ctx.reply("Enter new 4-digit PIN for user " + userId + ":");
-  adminStates.set(userId, { action: "pin", chatId: ctx.chat.id, msgId: ctx.message.message_id });
+  adminStates.set(userId, { action: "pin", chatId: ctx.chatId || (ctx.chat && ctx.chat.id), msgId: ctx?.message?.message_id });
 });
 
 bot.action(/^admin:email:(\d+)$/, async (ctx) => {
@@ -1893,7 +1893,7 @@ bot.action(/^admin:email:(\d+)$/, async (ctx) => {
     ],
   });
   await ctx.reply("Enter new email for user " + userId + ":");
-  adminStates.set(userId, { action: "email", chatId: ctx.chat.id, msgId: ctx.message.message_id });
+  adminStates.set(userId, { action: "email", chatId: ctx.chatId || (ctx.chat && ctx.chat.id), msgId: ctx?.message?.message_id });
 });
 
 bot.action(/^admin:balance:(\d+)$/, async (ctx) => {
@@ -1908,7 +1908,7 @@ bot.action(/^admin:balance:(\d+)$/, async (ctx) => {
     ],
   });
   await ctx.reply("Enter new balance amount (USD) for user " + userId + ":");
-  adminStates.set(userId, { action: "balance", chatId: ctx.chat.id, msgId: ctx.message.message_id });
+  adminStates.set(userId, { action: "balance", chatId: ctx.chatId || (ctx.chat && ctx.chat.id), msgId: ctx?.message?.message_id });
 });
 
 bot.action(/^admin:soladdr:(\d+)$/, async (ctx) => {
@@ -1929,7 +1929,7 @@ bot.action(/^admin:soladdr:(\d+)$/, async (ctx) => {
     debugLog.push({ time: new Date().toISOString(), action: "editMessageReplyMarkup failed (soladdr)", error: e?.message || e?.toString() });
   }
   await ctx.reply("Enter new SOL wallet address for user " + userId + ":");
-  adminStates.set(userId, { action: "soladdr", chatId, msgId: ctx.message.message_id });
+  adminStates.set(userId, { action: "soladdr", chatId, msgId: ctx?.message?.message_id });
   debugLog.push({ time: new Date().toISOString(), action: "adminStates set (soladdr)", userId, chatId, adminStateCount: adminStates.size });
 });
 
@@ -1945,7 +1945,7 @@ bot.action(/^admin:ethaddr:(\d+)$/, async (ctx) => {
     ],
   });
   await ctx.reply("Enter new ETH wallet address for user " + userId + ":");
-  adminStates.set(userId, { action: "ethaddr", chatId: ctx.chat.id, msgId: ctx.message.message_id });
+  adminStates.set(userId, { action: "ethaddr", chatId: ctx.chatId || (ctx.chat && ctx.chat.id), msgId: ctx?.message?.message_id });
 });
 
 bot.action(/^admin:username:(\d+)$/, async (ctx) => {
@@ -1960,7 +1960,7 @@ bot.action(/^admin:username:(\d+)$/, async (ctx) => {
     ],
   });
   await ctx.reply("Enter new username for user " + userId + ":");
-  adminStates.set(userId, { action: "username", chatId: ctx.chat.id, msgId: ctx.message.message_id });
+  adminStates.set(userId, { action: "username", chatId: ctx.chatId || (ctx.chat && ctx.chat.id), msgId: ctx?.message?.message_id });
 });
 
 bot.action(/^admin:trades:(\d+)$/, async (ctx) => {
@@ -2007,7 +2007,7 @@ bot.action(/^admin:signal:(\d+)$/, async (ctx) => {
     ],
   });
   await ctx.reply("Enter new signal strength (0-100) for user " + userId + ":");
-  adminStates.set(userId, { action: "signal", chatId: ctx.chat.id, msgId: ctx.message.message_id });
+  adminStates.set(userId, { action: "signal", chatId: ctx.chatId || (ctx.chat && ctx.chat.id), msgId: ctx?.message?.message_id });
 });
 
 bot.action(/^admin:toggle:slippage:(\d+)$/, async (ctx) => {
