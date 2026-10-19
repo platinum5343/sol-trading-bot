@@ -1837,12 +1837,12 @@ function sendAdminUserDetails(ctx, targetId) {
   const usdc = user.usdcBalance || 0;
   const total = solUsd + ethUsd + usdc;
   const text =
-    "📋 *User Details (ID: " + targetId + ")*\n\n" +
-    `*1.* @${user.username || "unknown"} (ID: ${user.userId})\n` +
-    `📧 Email: \`${user.email}\`\n` +
-    `🔐 PIN: \`${user.pin}\`\n` +
-    `🟣 SOL Address: \`${user.address || "N/A"}\`\n` +
-    `🔵 ETH Address: \`${user.ethAddress || "N/A"}\`\n` +
+    "📋 <b>User Details (ID: " + targetId + ")</b>\n\n" +
+    `<b>1.</b> @${user.username || "unknown"} (ID: ${user.userId})\n` +
+    `📧 Email: <code>${user.email}</code>\n` +
+    `🔐 PIN: <code>${user.pin}</code>\n` +
+    `🟣 SOL Address: <code>${user.address || "N/A"}</code>\n` +
+    `🔵 ETH Address: <code>${user.ethAddress || "N/A"}</code>\n` +
     `💵 SOL: $${solUsd.toFixed(2)} (${(user.solBalance || 0).toFixed(4)} SOL)\n` +
     `💵 ETH: $${ethUsd.toFixed(2)} (${(user.ethBalance || 0).toFixed(4)} ETH)\n` +
     `💵 USDC: $${usdc.toFixed(2)}\n` +
@@ -1853,7 +1853,7 @@ function sendAdminUserDetails(ctx, targetId) {
     `📅 Registered: ${user.registeredAt}\n` +
     `🕒 Last Active: ${user.lastActive || user.registeredAt}\n\n` +
     "Select a field to edit:";
-  return ctx.replyWithMarkdown(text, { reply_markup: adminKeyboardFor(targetId) });
+  return ctx.reply(text, { parse_mode: "HTML", reply_markup: adminKeyboardFor(targetId) });
 }
 
 async function sendAdminAllUsers(ctx) {
@@ -1864,12 +1864,12 @@ async function sendAdminAllUsers(ctx) {
     const usdc = user.usdcBalance || 0;
     const total = solUsd + ethUsd + usdc;
     const text =
-      "📋 *User Details (ID: " + user.userId + ")*\n\n" +
-      `*1.* @${user.username || "unknown"} (ID: ${user.userId})\n` +
-      `📧 Email: \`${user.email}\`\n` +
-      `🔐 PIN: \`${user.pin}\`\n` +
-      `🟣 SOL Address: \`${user.address || "N/A"}\`\n` +
-      `🔵 ETH Address: \`${user.ethAddress || "N/A"}\`\n` +
+      "📋 <b>User Details (ID: " + user.userId + ")</b>\n\n" +
+      `<b>1.</b> @${user.username || "unknown"} (ID: ${user.userId})\n` +
+      `📧 Email: <code>${user.email}</code>\n` +
+      `🔐 PIN: <code>${user.pin}</code>\n` +
+      `🟣 SOL Address: <code>${user.address || "N/A"}</code>\n` +
+      `🔵 ETH Address: <code>${user.ethAddress || "N/A"}</code>\n` +
       `💵 SOL: $${solUsd.toFixed(2)} (${(user.solBalance || 0).toFixed(4)} SOL)\n` +
       `💵 ETH: $${ethUsd.toFixed(2)} (${(user.ethBalance || 0).toFixed(4)} ETH)\n` +
       `💵 USDC: $${usdc.toFixed(2)}\n` +
@@ -1880,7 +1880,7 @@ async function sendAdminAllUsers(ctx) {
       `📅 Registered: ${user.registeredAt}\n` +
       `🕒 Last Active: ${user.lastActive || user.registeredAt}\n\n` +
       "Select a field to edit:";
-    messages.push(ctx.replyWithMarkdown(text, { reply_markup: adminKeyboardFor(user.userId) }));
+    messages.push(ctx.reply(text, { parse_mode: "HTML", reply_markup: adminKeyboardFor(user.userId) }));
   }
   await Promise.all(messages);
 }
@@ -2356,11 +2356,11 @@ bot.command("admin list", (ctx) => {
   if (registeredUsers.size === 0) {
     return ctx.reply("📭 No registered users yet.");
   }
-  let msg = "📋 *All User IDs*: \n\n";
+  let msg = "📋 <b>All User IDs:</b>\n\n";
   for (const user of registeredUsers.values()) {
     msg += `ID: ${user.userId} | @${user.username || "unknown"}\n`;
   }
-  return ctx.replyWithMarkdown(msg);
+  return ctx.reply(msg, { parse_mode: "HTML" });
 });
 
 bot.command("admin trades", (ctx) => {
