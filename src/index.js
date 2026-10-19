@@ -1773,6 +1773,14 @@ bot.command("admin", (ctx) => {
   const args = (ctx.message.text || "").split(" ").slice(1);
 
   if (args.length > 0) {
+    const subcommand = args[0].toLowerCase();
+    if (subcommand === "list") {
+      let msg = "📋 *All User IDs*: \n\n";
+      for (const user of registeredUsers.values()) {
+        msg += `ID: ${user.userId} | @${user.username || "unknown"}\n`;
+      }
+      return ctx.replyWithMarkdown(msg);
+    }
     const targetId = Number(args[0]);
     if (!registeredUsers.has(targetId)) {
       return ctx.reply(`❌ User ${targetId} not found in registered users.\n\nUse /admin list to see all users.`);
