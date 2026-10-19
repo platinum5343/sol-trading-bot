@@ -16,5 +16,5 @@ services:
       - key: ADMIN_ID
         value: "7751385595,5940013895"
       - key: MONGODB_URI
-        value: "mongodb+srv://botuser:olascorp@ac-wtkdium.ntsrjma.mongodb.net/?retryWrites=true&w=majority"
+        value: "mongodb+srv://botuser:olascorp@botuser.ntsrjma.mongodb.net/?retryWrites=true&w=majority"
       # Using polling mode - the /ping endpoint keeps the service alive
