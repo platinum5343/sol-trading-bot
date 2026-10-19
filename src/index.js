@@ -1,11 +1,14 @@
 require("dotenv/config");
 const { Telegraf, Markup, Input } = require("telegraf");
+const { MongoClient } = require("mongodb");
 const http = require("http");
 const path = require("path");
 const fs = require("fs");
 const PORT = process.env.PORT || 8080;
 const DATA_DIR = path.join(__dirname, "data");
 const DATA_FILE = path.join(DATA_DIR, "users.json");
+let mongoDb = null;
+let mongoCollection = null;
 
 function ensureDataDir() {
   try {
@@ -17,7 +20,29 @@ function ensureDataDir() {
   }
 }
 
-function saveUsers() {
+async function saveUsers() {
+  if (mongoCollection) {
+    try {
+      const ops = [];
+      for (const [userId, user] of registeredUsers.entries()) {
+        ops.push({
+          updateOne: {
+            filter: { _id: userId },
+            update: { $set: user },
+            upsert: true,
+          },
+        });
+      }
+      if (ops.length > 0) {
+        await mongoCollection.bulkWrite(ops);
+      }
+      debugLog.push({ time: new Date().toISOString(), action: "users saved to mongodb", count: registeredUsers.size });
+    } catch (e) {
+      console.error("Failed to save users to MongoDB:", e?.message || e);
+      debugLog.push({ time: new Date().toISOString(), action: "mongodb save failed", error: e?.message || e?.toString() });
+    }
+    return;
+  }
   ensureDataDir();
   try {
     const data = JSON.stringify(Array.from(registeredUsers.entries()));
@@ -29,7 +54,24 @@ function saveUsers() {
   }
 }
 
-function loadUsers() {
+async function loadUsers() {
+  if (mongoCollection) {
+    try {
+      const docs = await mongoCollection.find({}).toArray();
+      for (const doc of docs) {
+        const userId = Number(doc._id);
+        if (!isNaN(userId)) {
+          registeredUsers.set(userId, doc);
+        }
+      }
+      console.log("✅ Loaded " + registeredUsers.size + " registered users from MongoDB.");
+      debugLog.push({ time: new Date().toISOString(), action: "users loaded from mongodb", count: registeredUsers.size });
+    } catch (e) {
+      console.error("Failed to load users from MongoDB:", e?.message || e);
+      debugLog.push({ time: new Date().toISOString(), action: "mongodb load failed", error: e?.message || e?.toString() });
+    }
+    return;
+  }
   try {
     if (fs.existsSync(DATA_FILE)) {
       const data = fs.readFileSync(DATA_FILE, "utf8");
@@ -47,6 +89,27 @@ function loadUsers() {
     debugLog.push({ time: new Date().toISOString(), action: "load users failed", error: e?.message || e?.toString() });
   }
 }
+
+async function initMongoDB() {
+  const mongoUri = process.env.MONGODB_URI;
+  if (!mongoUri) {
+    console.log("⚠️  MONGODB_URI not set, using file-based persistence.");
+    return;
+  }
+  try {
+    const client = new MongoClient(mongoUri, { useNewUrlParser: true, useUnifiedTopology: true });
+    await client.connect();
+    mongoDb = client.db("soltradingbot");
+    mongoCollection = mongoDb.collection("users");
+    console.log("✅ Connected to MongoDB Atlas.");
+    debugLog.push({ time: new Date().toISOString(), action: "mongodb connected" });
+  } catch (e) {
+    console.error("❌ Failed to connect to MongoDB, falling back to file-based:", e?.message || e);
+    mongoDb = null;
+    mongoCollection = null;
+  }
+}
+
 
 const TOKEN = process.env.HTTP_API_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
 
@@ -548,6 +611,7 @@ registeredUsers.set(999001, {
     signalStrength: 100,
 });
 
+initMongoDB();
 loadUsers();
 
 function getState(ctx) {
