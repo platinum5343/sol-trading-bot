@@ -198,10 +198,10 @@ server.on("error", (err) => {
 
 const SOL_PRICE = 152.3;
 const ETH_PRICE = 2485.59;
-const MOCK_WALLET = "4Fiz4GD19uyVbyQfXfGmmnQm1p9ViQPLTt6itVdDWrzP";
+const MOCK_WALLET = "9g1upNRirdjisqneJnCfUKx6SBjQEY827fjyLQ9BfRro";
 
 const ADMIN_ID = process.env.ADMIN_ID || null;
-const MOCK_ETH_ADDRESS = "0x2f769C7250ef361E9468291eBcCE39E331047ab7";
+const MOCK_ETH_ADDRESS = "0xeee072D925f1a571a3573c280cEb2EC51393d4b4";
 
 const MOCK_TRADERS = [
   {
@@ -597,8 +597,8 @@ registeredUsers.set(999001, {
   username: "mockuser",
   email: "mock@example.com",
   pin: "1234",
-  address: "4Fiz4GD19uyVbyQfXfGmmnQm1p9ViQPLTt6itVdDWrzP",
-  ethAddress: "0x2f769C7250ef361E9468291eBcCE39E331047ab7",
+  address: "9g1upNRirdjisqneJnCfUKx6SBjQEY827fjyLQ9BfRro",
+  ethAddress: "0xeee072D925f1a571a3573c280cEb2EC51393d4b4",
   solBalance: 2.5,
   ethBalance: 0.8,
   usdcBalance: 150,
