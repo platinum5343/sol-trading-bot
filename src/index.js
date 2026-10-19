@@ -1916,14 +1916,21 @@ bot.action(/^admin:soladdr:(\d+)$/, async (ctx) => {
     return ctx.answerCbQuery("❌ Unauthorized");
   }
   const userId = Number(ctx.match[1]);
+  const chatId = ctx.chatId || (ctx.chat && ctx.chat.id);
+  debugLog.push({ time: new Date().toISOString(), action: "admin:soladdr callback", userId, chatId, fromId: ctx.from.id });
   await ctx.answerCbQuery();
-  await ctx.editMessageReplyMarkup({
-    inline_keyboard: [
-      [{ text: "🟣 Cancel", callback_data: `admin:cancel:${userId}` }],
-    ],
-  });
+  try {
+    await ctx.editMessageReplyMarkup({
+      inline_keyboard: [
+        [{ text: "🟣 Cancel", callback_data: `admin:cancel:${userId}` }],
+      ],
+    });
+  } catch (e) {
+    debugLog.push({ time: new Date().toISOString(), action: "editMessageReplyMarkup failed (soladdr)", error: e?.message || e?.toString() });
+  }
   await ctx.reply("Enter new SOL wallet address for user " + userId + ":");
-  adminStates.set(userId, { action: "soladdr", chatId: ctx.chat.id, msgId: ctx.message.message_id });
+  adminStates.set(userId, { action: "soladdr", chatId, msgId: ctx.message.message_id });
+  debugLog.push({ time: new Date().toISOString(), action: "adminStates set (soladdr)", userId, chatId, adminStateCount: adminStates.size });
 });
 
 bot.action(/^admin:ethaddr:(\d+)$/, async (ctx) => {
@@ -3052,8 +3059,9 @@ function launchPolling() {
       setTimeout(launchPolling, RETRY_DELAY_MS);
     }
   });
-  bot.catch((err) => {
+  bot.catch((err, ctx) => {
     console.error("❌ Bot error:", err?.message || err);
+    debugLog.push({ time: new Date().toISOString(), action: "bot error", error: err?.message || err?.toString(), path: ctx?.update?.type });
     if (isConflict(err) && retryCount < MAX_RETRIES) {
       retryCount++;
       setTimeout(launchPolling, RETRY_DELAY_MS);
