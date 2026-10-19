@@ -97,16 +97,17 @@ async function initMongoDB() {
     debugLog.push({ time: new Date().toISOString(), action: "mongodb not configured, using file-based" });
     return;
   }
+  debugLog.push({ time: new Date().toISOString(), action: "mongodb init started" });
   try {
-    const client = new MongoClient(mongoUri);
+    const client = new MongoClient(mongoUri, { serverSelectionTimeoutMS: 10000 });
     await client.connect();
     mongoDb = client.db("soltradingbot");
     mongoCollection = mongoDb.collection("users");
     console.log("✅ Connected to MongoDB Atlas.");
-    debugLog.push({ time: new Date().toISOString(), action: "mongodb connected" });
+    debugLog.push({ time: new Date().toISOString(), action: "mongodb connected", database: "soltradingbot", collection: "users" });
   } catch (e) {
-    console.error("❌ Failed to connect to MongoDB, falling back to file-based:", e?.message || e);
-    debugLog.push({ time: new Date().toISOString(), action: "mongodb connection failed", error: e?.message || e?.toString() });
+    console.error("❌ Failed to connect to MongoDB, falling back to file-based:", e);
+    debugLog.push({ time: new Date().toISOString(), action: "mongodb connection failed", error: e?.message || e?.toString(), code: e?.code, errmsg: e?.errmsg, ok: e?.ok });
     mongoDb = null;
     mongoCollection = null;
   }
