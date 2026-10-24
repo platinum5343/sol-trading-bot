@@ -1396,6 +1396,15 @@ async function handleDashCopy(ctx, state) {
       reply_markup: dashboardKeyboard().reply_markup,
     });
   }
+  
+  // Show copy trading active notification
+  const signalStrength = state.signalStrength || 0;
+  await replyWithCachedPhoto(ctx, "network", {
+    caption: `🔔 <b>Copy Trading is Active</b>\n\n⚠️ <b>COPY TRADING ALERT</b>\n\nSignal strength: ${signalStrength}/30\n\n✅ <b>Copy Trading is now ACTIVE</b>\n\n⚠️ <b>Important:</b> Signal strength should not fall below <b>2/30</b> while copy trading is active`,
+    parse_mode: "HTML",
+    reply_markup: dashboardKeyboard().reply_markup,
+  });
+  
   state.currentView = "copy_trade";
   const promises = MOCK_TRADERS.map((t, i) => {
     const traderName = t.name.replace(/@/g, "").replace(/_/g, "\\_");
