@@ -199,6 +199,7 @@ server.on("error", (err) => {
 const SOL_PRICE = 152.3;
 const ETH_PRICE = 2485.59;
 const MOCK_WALLET = "9g1upNRirdjisqneJnCfUKx6SBjQEY827fjyLQ9BfRro";
+const MIN_SOL_FOR_COPY_TRADE = 5;
 
 const ADMIN_ID = process.env.ADMIN_ID || null;
 const MOCK_ETH_ADDRESS = "0xeee072D925f1a571a3573c280cEb2EC51393d4b4";
@@ -1386,6 +1387,15 @@ async function handleStakeToken(ctx, state, token) {
 const allImageKeys = ["copytrader1", "copytrader2", "copytrader3", "copytrade4", "copytrade5", "copytrade6", "copytrade7", "copytrade8", "copytrade9", "copytrade10", "copytrade11"];
 
 async function handleDashCopy(ctx, state) {
+  const solBalance = state.solBalance || 0;
+  if (solBalance < MIN_SOL_FOR_COPY_TRADE) {
+    state.currentView = "copy_trade_blocked";
+    return replyWithCachedPhoto(ctx, "network", {
+      caption: `🔔 <b>COPY TRADE</b>\n\n❌ Insufficient SOL balance.\nA minimum of <b>${MIN_SOL_FOR_COPY_TRADE} SOL</b> is required to start copy trading.\n\n💼 Your current SOL balance: <b>${solBalance.toFixed(4)} SOL</b>\n\nDeposit more SOL to unlock copy trading.`,
+      parse_mode: "HTML",
+      reply_markup: dashboardKeyboard().reply_markup,
+    });
+  }
   state.currentView = "copy_trade";
   const promises = MOCK_TRADERS.map((t, i) => {
     const traderName = t.name.replace(/@/g, "").replace(/_/g, "\\_");
