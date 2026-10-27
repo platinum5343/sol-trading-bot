@@ -2622,6 +2622,19 @@ bot.action("admin:wipe:confirm", async (ctx) => {
   await ctx.answerCbQuery();
 });
 
+bot.command("admin reload", async (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    return ctx.reply("❌ You are not authorized to view this page.");
+  }
+  if (!mongoCollection) {
+    return ctx.reply("❌ MongoDB not connected. Cannot reload.");
+  }
+  const beforeCount = registeredUsers.size;
+  await loadUsers();
+  const afterCount = registeredUsers.size;
+  ctx.reply(`✅ Reloaded users from MongoDB.\nBefore: ${beforeCount} users\nAfter: ${afterCount} users`);
+});
+
 bot.on("text", async (ctx) => {
   const state = getState(ctx);
   const text = (ctx.text ?? "").trim();
