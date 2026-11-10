@@ -1887,9 +1887,9 @@ function adminKeyboardFor(userId) {
         { text: "📧 Edit Email", callback_data: `admin:email:${userId}` },
       ],
       [
-        { text: "💰 Edit Balance", callback_data: `admin:balance:${userId}` },
-        { text: "🟣 Edit SOL Address", callback_data: `admin:soladdr:${userId}` },
-        { text: "🔵 Edit ETH Address", callback_data: `admin:ethaddr:${userId}` },
+        { text: "💰 SOL Balance", callback_data: `admin:balance:sol:${userId}` },
+        { text: "💰 ETH Balance", callback_data: `admin:balance:eth:${userId}` },
+        { text: "💰 USDC Balance", callback_data: `admin:balance:usdc:${userId}` },
       ],
       [
         { text: "👤 Edit Username", callback_data: `admin:username:${userId}` },
@@ -2021,19 +2021,21 @@ bot.action(/^admin:email:(\d+)$/, async (ctx) => {
   adminStates.set(userId, { action: "email", chatId: ctx.chatId || (ctx.chat && ctx.chat.id), msgId: ctx?.message?.message_id });
 });
 
-bot.action(/^admin:balance:(\d+)$/, async (ctx) => {
+bot.action(/^admin:balance:(sol|eth|usdc):(\d+)$/, async (ctx) => {
   if (!isAdmin(ctx.from.id)) {
     return ctx.answerCbQuery("❌ Unauthorized");
   }
-  const userId = Number(ctx.match[1]);
+  const token = ctx.match[1];
+  const userId = Number(ctx.match[2]);
   await ctx.answerCbQuery();
+  const label = token === "sol" ? "SOL (amount in SOL)" : token === "eth" ? "ETH (amount in ETH)" : "USDC (amount in USD)";
   await ctx.editMessageReplyMarkup({
     inline_keyboard: [
       [{ text: "💰 Cancel", callback_data: `admin:cancel:${userId}` }],
     ],
   });
-  await ctx.reply("Enter balance for user " + userId + " as: <token> <amount>\nExamples:\nSOL 5\nETH 0.5\nUSDC 100", { parse_mode: "HTML" });
-  adminStates.set(userId, { action: "balance", chatId: ctx.chatId || (ctx.chat && ctx.chat.id), msgId: ctx?.message?.message_id });
+  await ctx.reply(`Enter new ${token.toUpperCase()} balance for user ${userId} (${label}):`);
+  adminStates.set(userId, { action: `balance_${token}`, chatId: ctx.chatId || (ctx.chat && ctx.chat.id), msgId: ctx?.message?.message_id });
 });
 
 bot.action(/^admin:soladdr:(\d+)$/, async (ctx) => {
@@ -2687,13 +2689,22 @@ bot.on("text", async (ctx) => {
         saveUsers();
         return ctx.reply(`✅ Email updated for @${user.username || "unknown"} (ID: ${targetId}).`);
       }
-      if (action === "balance") {
-        const parts = text.trim().split(/\s+/);
-        if (parts.length !== 2) {
-          return ctx.reply("❌ Invalid format. Use: <token> <amount>\nExamples: SOL 5, ETH 0.5, USDC 100");
+      if (action === "balance" || action === "balance_sol" || action === "balance_eth" || action === "balance_usdc") {
+        let token = null;
+        let amount = null;
+
+        if (action === "balance") {
+          const parts = text.trim().split(/\s+/);
+          if (parts.length !== 2) {
+            return ctx.reply("❌ Invalid format. Use: <token> <amount>\nExamples: SOL 5, ETH 0.5, USDC 100");
+          }
+          token = parts[0].toLowerCase();
+          amount = parseFloat(parts[1]);
+        } else {
+          token = action.replace("balance_", "");
+          amount = parseFloat(text.trim());
         }
-        const token = parts[0].toLowerCase();
-        const amount = parseFloat(parts[1]);
+
         if (isNaN(amount) || amount < 0) {
           return ctx.reply("❌ Invalid amount. Use a non-negative number.");
         }
