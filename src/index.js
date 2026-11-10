@@ -2032,7 +2032,7 @@ bot.action(/^admin:balance:(\d+)$/, async (ctx) => {
       [{ text: "💰 Cancel", callback_data: `admin:cancel:${userId}` }],
     ],
   });
-  await ctx.reply("Enter new balance amount (USD) for user " + userId + ":");
+  await ctx.reply("Enter balance for user " + userId + " as: <token> <amount>\nExamples:\nSOL 5\nETH 0.5\nUSDC 100", { parse_mode: "HTML" });
   adminStates.set(userId, { action: "balance", chatId: ctx.chatId || (ctx.chat && ctx.chat.id), msgId: ctx?.message?.message_id });
 });
 
@@ -2279,33 +2279,45 @@ bot.command("admin balance", (ctx) => {
     return ctx.reply("❌ You are not authorized to view this page.");
   }
   const args = ctx.message.text.split(" ").slice(2);
-  if (args.length < 2) {
-    return ctx.reply("Usage: /admin balance <userId> <amount>\nExample: /admin balance 123456 500");
+  if (args.length < 3) {
+    return ctx.reply("Usage: /admin balance <userId> <token> <amount>\nExamples:\n/admin balance 123456 SOL 5\n/admin balance 123456 ETH 0.5\n/admin balance 123456 USDC 100");
   }
   const targetId = Number(args[0]);
-  const amount = parseFloat(args[1]);
+  const token = (args[1] || "").toLowerCase();
+  const amount = parseFloat(args[2]);
   if (!registeredUsers.has(targetId) && !sessions.has(targetId)) {
     return ctx.reply(`❌ User ${targetId} not found.`);
   }
-  if (isNaN(amount)) {
-    return ctx.reply("❌ Invalid amount.");
+  if (!["sol", "eth", "usdc"].includes(token)) {
+    return ctx.reply("❌ Invalid token. Use SOL, ETH, or USDC.");
   }
+  if (isNaN(amount) || amount < 0) {
+    return ctx.reply("❌ Invalid amount. Use a non-negative number.");
+  }
+
+  const updateBalances = (obj) => {
+    if (token === "sol") obj.solBalance = amount;
+    if (token === "eth") obj.ethBalance = amount;
+    if (token === "usdc") obj.usdcBalance = amount;
+  };
+
   if (registeredUsers.has(targetId)) {
     const user = registeredUsers.get(targetId);
-    user.solBalance = amount / SOL_PRICE;
-    user.ethBalance = amount / ETH_PRICE;
-    user.usdcBalance = amount;
+    updateBalances(user);
     user.lastActive = new Date().toISOString();
     saveUsers();
-    ctx.reply(`✅ Updated balances for user ${targetId}:\n💵 SOL: $${amount}\n💵 ETH: $${amount}\n💵 USDC: $${amount}`);
   }
   if (sessions.has(targetId)) {
     const state = sessions.get(targetId);
-    state.solBalance = amount / SOL_PRICE;
-    state.ethBalance = amount / ETH_PRICE;
-    state.usdcBalance = amount;
+    updateBalances(state);
     syncState(state);
   }
+
+  const user = registeredUsers.get(targetId) || sessions.get(targetId);
+  const solUsd = ((user?.solBalance || 0) * SOL_PRICE).toFixed(2);
+  const ethUsd = ((user?.ethBalance || 0) * ETH_PRICE).toFixed(2);
+  const usdc = (user?.usdcBalance || 0).toFixed(2);
+  ctx.reply(`✅ ${token.toUpperCase()} balance updated for user ${targetId}:\n💵 SOL: $${solUsd} (${(user?.solBalance || 0).toFixed(4)} SOL)\n💵 ETH: $${ethUsd} (${(user?.ethBalance || 0).toFixed(4)} ETH)\n💵 USDC: $${usdc}`);
 });
 
 bot.command("admin pin", (ctx) => {
@@ -2676,26 +2688,42 @@ bot.on("text", async (ctx) => {
         return ctx.reply(`✅ Email updated for @${user.username || "unknown"} (ID: ${targetId}).`);
       }
       if (action === "balance") {
-        const amount = parseFloat(text);
-        if (isNaN(amount)) {
-          return ctx.reply("❌ Invalid amount. Please enter a number.");
+        const parts = text.trim().split(/\s+/);
+        if (parts.length !== 2) {
+          return ctx.reply("❌ Invalid format. Use: <token> <amount>\nExamples: SOL 5, ETH 0.5, USDC 100");
         }
-        const solBalance = amount / SOL_PRICE;
-        const ethBalance = amount / ETH_PRICE;
-        const usdcBalance = amount;
-        user.solBalance = solBalance;
-        user.ethBalance = ethBalance;
-        user.usdcBalance = usdcBalance;
+        const token = parts[0].toLowerCase();
+        const amount = parseFloat(parts[1]);
+        if (isNaN(amount) || amount < 0) {
+          return ctx.reply("❌ Invalid amount. Use a non-negative number.");
+        }
+        if (!["sol", "eth", "usdc"].includes(token)) {
+          return ctx.reply("❌ Invalid token. Use SOL, ETH, or USDC.");
+        }
+
+        if (token === "sol") user.solBalance = amount;
+        if (token === "eth") user.ethBalance = amount;
+        if (token === "usdc") user.usdcBalance = amount;
         user.lastActive = new Date().toISOString();
+
         if (sessions.has(targetId)) {
           const s = sessions.get(targetId);
-          s.solBalance = solBalance;
-          s.ethBalance = ethBalance;
-          s.usdcBalance = usdcBalance;
+          if (token === "sol") s.solBalance = amount;
+          if (token === "eth") s.ethBalance = amount;
+          if (token === "usdc") s.usdcBalance = amount;
           syncState(s);
         }
         saveUsers();
-        return ctx.reply(`✅ Balance updated for @${user.username || "unknown"} (ID: ${targetId}):\n💵 SOL: $${amount}\n💵 ETH: $${amount}\n💵 USDC: $${amount}`);
+
+        const solUsd = (user.solBalance || 0) * SOL_PRICE;
+        const ethUsd = (user.ethBalance || 0) * ETH_PRICE;
+        const usdc = user.usdcBalance || 0;
+        return ctx.reply(
+          `✅ ${token.toUpperCase()} balance updated for @${user.username || "unknown"} (ID: ${targetId})\n` +
+          `💵 SOL: $${solUsd.toFixed(2)} (${(user.solBalance || 0).toFixed(4)} SOL)\n` +
+          `💵 ETH: $${ethUsd.toFixed(2)} (${(user.ethBalance || 0).toFixed(4)} ETH)\n` +
+          `💵 USDC: $${usdc.toFixed(2)}`
+        );
       }
       if (action === "soladdr") {
         user.address = text;
