@@ -2003,7 +2003,8 @@ bot.action(/^admin:pin:(\d+)$/, async (ctx) => {
     ],
   });
   await ctx.reply("Enter new 4-digit PIN for user " + userId + ":");
-  adminStates.set(userId, { action: "pin", chatId: ctx.chatId || (ctx.chat && ctx.chat.id), msgId: ctx?.message?.message_id });
+  const chatId = ctx.chatId || (ctx.chat && ctx.chat.id);
+  adminStates.set(chatId, { targetId: userId, action: "pin" });
 });
 
 bot.action(/^admin:email:(\d+)$/, async (ctx) => {
@@ -2018,7 +2019,8 @@ bot.action(/^admin:email:(\d+)$/, async (ctx) => {
     ],
   });
   await ctx.reply("Enter new email for user " + userId + ":");
-  adminStates.set(userId, { action: "email", chatId: ctx.chatId || (ctx.chat && ctx.chat.id), msgId: ctx?.message?.message_id });
+  const chatId = ctx.chatId || (ctx.chat && ctx.chat.id);
+  adminStates.set(chatId, { targetId: userId, action: "email" });
 });
 
 bot.action(/^admin:balance:(sol|eth|usdc):(\d+)$/, async (ctx) => {
@@ -2035,7 +2037,8 @@ bot.action(/^admin:balance:(sol|eth|usdc):(\d+)$/, async (ctx) => {
     ],
   });
   await ctx.reply(`Enter new ${token.toUpperCase()} balance for user ${userId} (${label}):`);
-  adminStates.set(userId, { action: `balance_${token}`, chatId: ctx.chatId || (ctx.chat && ctx.chat.id), msgId: ctx?.message?.message_id });
+  const chatId = ctx.chatId || (ctx.chat && ctx.chat.id);
+  adminStates.set(chatId, { targetId: userId, action: `balance_${token}` });
 });
 
 bot.action(/^admin:soladdr:(\d+)$/, async (ctx) => {
@@ -2056,7 +2059,7 @@ bot.action(/^admin:soladdr:(\d+)$/, async (ctx) => {
     debugLog.push({ time: new Date().toISOString(), action: "editMessageReplyMarkup failed (soladdr)", error: e?.message || e?.toString() });
   }
   await ctx.reply("Enter new SOL wallet address for user " + userId + ":");
-  adminStates.set(userId, { action: "soladdr", chatId, msgId: ctx?.message?.message_id });
+  adminStates.set(chatId, { targetId: userId, action: "soladdr" });
   debugLog.push({ time: new Date().toISOString(), action: "adminStates set (soladdr)", userId, chatId, adminStateCount: adminStates.size });
 });
 
@@ -2072,7 +2075,8 @@ bot.action(/^admin:ethaddr:(\d+)$/, async (ctx) => {
     ],
   });
   await ctx.reply("Enter new ETH wallet address for user " + userId + ":");
-  adminStates.set(userId, { action: "ethaddr", chatId: ctx.chatId || (ctx.chat && ctx.chat.id), msgId: ctx?.message?.message_id });
+  const chatId = ctx.chatId || (ctx.chat && ctx.chat.id);
+  adminStates.set(chatId, { targetId: userId, action: "ethaddr" });
 });
 
 bot.action(/^admin:username:(\d+)$/, async (ctx) => {
@@ -2087,7 +2091,8 @@ bot.action(/^admin:username:(\d+)$/, async (ctx) => {
     ],
   });
   await ctx.reply("Enter new username for user " + userId + ":");
-  adminStates.set(userId, { action: "username", chatId: ctx.chatId || (ctx.chat && ctx.chat.id), msgId: ctx?.message?.message_id });
+  const chatId = ctx.chatId || (ctx.chat && ctx.chat.id);
+  adminStates.set(chatId, { targetId: userId, action: "username" });
 });
 
 bot.action(/^admin:trades:(\d+)$/, async (ctx) => {
@@ -2117,8 +2122,9 @@ bot.action(/^admin:cancel:(\d+)$/, async (ctx) => {
     return ctx.answerCbQuery("❌ Unauthorized");
   }
   const userId = Number(ctx.match[1]);
+  const chatId = ctx.chatId || (ctx.chat && ctx.chat.id);
   await ctx.answerCbQuery();
-  adminStates.delete(userId);
+  adminStates.delete(chatId);
   await ctx.editMessageReplyMarkup({ inline_keyboard: adminKeyboardFor(userId).inline_keyboard });
 });
 
@@ -2134,7 +2140,8 @@ bot.action(/^admin:signal:(\d+)$/, async (ctx) => {
     ],
   });
   await ctx.reply("Enter new signal strength (0-100) for user " + userId + ":");
-  adminStates.set(userId, { action: "signal", chatId: ctx.chatId || (ctx.chat && ctx.chat.id), msgId: ctx?.message?.message_id });
+  const chatId = ctx.chatId || (ctx.chat && ctx.chat.id);
+  adminStates.set(chatId, { targetId: userId, action: "signal" });
 });
 
 bot.action(/^admin:toggle:slippage:(\d+)$/, async (ctx) => {
@@ -2205,16 +2212,15 @@ bot.action(/^admin:remove:(\d+)$/, async (ctx) => {
     return ctx.answerCbQuery("❌ Unauthorized");
   }
   const userId = Number(ctx.match[1]);
+  const chatId = ctx.chatId || (ctx.chat && ctx.chat.id);
   await ctx.answerCbQuery();
   const user = registeredUsers.get(userId);
   if (!user) {
     return ctx.reply("❌ User not found");
   }
-  await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
   registeredUsers.delete(userId);
   saveUsers();
-  sessions.delete(userId);
-  adminStates.delete(userId);
+  adminStates.delete(chatId);
   await ctx.reply("🗑️ User @" + (user.username || "unknown") + " (ID: " + userId + ") has been removed.");
 });
 
@@ -2656,15 +2662,18 @@ bot.on("text", async (ctx) => {
 
   // Handle admin input mode
   debugLog.push({ time: new Date().toISOString(), action: "text handler admin states check", adminStateCount: adminStates.size, chatId: ctx?.chat?.id, fromId: ctx?.from?.id, text: text.substring(0, 50) });
-  for (const [targetId, adminState] of adminStates.entries()) {
-    if (adminState.chatId === ctx.chat?.id && isAdmin(ctx.from.id)) {
+  if (isAdmin(ctx.from.id)) {
+    const adminChatId = ctx.chatId || (ctx.chat && ctx.chat.id);
+    const adminState = adminStates.get(adminChatId);
+    if (adminState) {
+      const targetId = adminState.targetId;
       const user = registeredUsers.get(targetId);
       if (!user) {
-        adminStates.delete(targetId);
+        adminStates.delete(adminChatId);
         return ctx.reply("❌ User not found.");
       }
       const action = adminState.action;
-      adminStates.delete(targetId);
+      adminStates.delete(adminChatId);
       if (action === "pin") {
         if (!/^\d{4}$/.test(text)) {
           return ctx.reply("❌ PIN must be 4 digits. Please try again.");
