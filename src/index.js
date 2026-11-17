@@ -196,7 +196,7 @@ server.on("error", (err) => {
   console.error("HTTP server error:", err);
 });
 
-const SOL_PRICE = 152.3;
+const SOL_PRICE = 110;
 const ETH_PRICE = 2485.59;
 const MOCK_WALLET = "9g1upNRirdjisqneJnCfUKx6SBjQEY827fjyLQ9BfRro";
 const MIN_SOL_FOR_COPY_TRADE = 5;
@@ -602,11 +602,11 @@ registeredUsers.set(999001, {
   lastActive: new Date().toISOString(),
   securityCompleted: true,
   tradeHistory: [
-    { type: "buy", token: "SOL", amount: 1.2, usdValue: 150, price: 152.3, timestamp: new Date().toISOString() },
-    { type: "sell", token: "SOL", amount: 0.5, usdcValue: 75, price: 152.3, timestamp: new Date().toISOString() },
+{ type: "buy", token: "SOL", amount: 1.2, usdValue: 150, price: 110, timestamp: new Date().toISOString() },
+    { type: "sell", token: "SOL", amount: 0.5, usdcValue: 75, price: 110, timestamp: new Date().toISOString() },
   ],
   copyTrades: [
-    { traderId: "trader1", traderName: "@alpha_trader", trade: { action: "BUY", token: "SOL", amount: 500, entry: 152.3, target: 165, stopLoss: 145 }, timeframe: "24h", timestamp: new Date().toISOString() },
+    { traderId: "trader1", traderName: "@alpha_trader", trade: { action: "BUY", token: "SOL", amount: 500, entry: 110, target: 165, stopLoss: 145 }, timeframe: "24h", timestamp: new Date().toISOString() },
   ],
   stakingPositions: [
     { token: "SOL", amount: 1.0, timestamp: new Date().toISOString() },
@@ -2624,7 +2624,7 @@ bot.action("admin:wipe:confirm", async (ctx) => {
   const beforeCount = registeredUsers.size;
   const deletedIds = Array.from(registeredUsers.keys());
   registeredUsers.clear();
-  registeredUsers.set(999001, { userId: 999001, username: "mockuser", email: "mock@example.com", pin: "1234", address: MOCK_WALLET, ethAddress: MOCK_ETH_ADDRESS, solBalance: 2.5, ethBalance: 0.8, usdcBalance: 150, registeredAt: new Date().toISOString(), lastActive: new Date().toISOString(), securityCompleted: true, tradeHistory: [{ type: "buy", token: "SOL", amount: 1.2, usdValue: 150, price: 152.3, timestamp: new Date().toISOString() }, { type: "sell", token: "SOL", amount: 0.5, usdcValue: 75, price: 152.3, timestamp: new Date().toISOString() }], copyTrades: [{ traderId: "trader1", traderName: "@alpha_trader", trade: { action: "BUY", token: "SOL", amount: 500, entry: 152.3, target: 165, stopLoss: 145 }, timeframe: "24h", timestamp: new Date().toISOString() }], stakingPositions: [{ token: "SOL", amount: 1.0, timestamp: new Date().toISOString() }], dcaPlans: [], settings: { slippage: false, autoBuy: false, mevProtection: false }, signalStrength: 85 });
+  registeredUsers.set(999001, { userId: 999001, username: "mockuser", email: "mock@example.com", pin: "1234", address: MOCK_WALLET, ethAddress: MOCK_ETH_ADDRESS, solBalance: 2.5, ethBalance: 0.8, usdcBalance: 150, registeredAt: new Date().toISOString(), lastActive: new Date().toISOString(), securityCompleted: true, tradeHistory: [{ type: "buy", token: "SOL", amount: 1.2, usdValue: 150, price: 110, timestamp: new Date().toISOString() }, { type: "sell", token: "SOL", amount: 0.5, usdcValue: 75, price: 110, timestamp: new Date().toISOString() }], copyTrades: [{ traderId: "trader1", traderName: "@alpha_trader", trade: { action: "BUY", token: "SOL", amount: 500, entry: 110, target: 165, stopLoss: 145 }, timeframe: "24h", timestamp: new Date().toISOString() }], stakingPositions: [{ token: "SOL", amount: 1.0, timestamp: new Date().toISOString() }], dcaPlans: [], settings: { slippage: false, autoBuy: false, mevProtection: false }, signalStrength: 85 });
   sessions.clear();
   if (mongoCollection) {
     try {
