@@ -1705,17 +1705,19 @@ async function handleMenuReset(ctx, state) {
   state.selectedTrader = null;
   state.buyToken = null;
   state.sellToken = null;
-  state.solBalance = 0;
-  state.ethBalance = 0;
-  state.usdcBalance = 0;
-  state.tradeHistory = [];
-  state.copyTrades = [];
-  state.stakingPositions = [];
-  state.dcaPlans = [];
-  state.alerts = true;
-  state.slippage = false;
-  state.autoBuy = false;
-  state.mevProtection = false;
+  // Preserve user balances and data — only reset flow/UI state
+  if (state.userId && registeredUsers.has(state.userId)) {
+    const stored = registeredUsers.get(state.userId);
+    state.solBalance = stored.solBalance ?? state.solBalance;
+    state.ethBalance = stored.ethBalance ?? state.ethBalance;
+    state.usdcBalance = stored.usdcBalance ?? state.usdcBalance;
+    state.tradeHistory = stored.tradeHistory ?? state.tradeHistory;
+    state.copyTrades = stored.copyTrades ?? state.copyTrades;
+    state.stakingPositions = stored.stakingPositions ?? state.stakingPositions;
+    state.dcaPlans = stored.dcaPlans ?? state.dcaPlans;
+    state.settings = stored.settings ?? state.settings;
+    state.signalStrength = stored.signalStrength ?? state.signalStrength;
+  }
   return replyWithCachedPhoto(ctx, "welcome", {
     caption: WELCOME_TEXT,
     parse_mode: "Markdown",
