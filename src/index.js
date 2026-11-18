@@ -434,6 +434,7 @@ const MEDIA_PATHS = {
   copytrade9: `${MEDIA_BASE}/copytrade9.jpg`,
   copytrade10: `${MEDIA_BASE}/copytrade10.jpg`,
   copytrade11: `${MEDIA_BASE}/copytrade11.jpg`,
+  sniperalertimg: `${MEDIA_BASE}/sniperalertimg.jpeg`,
 };
 const MEDIA_URLS = {
   welcome: `${MEDIA_CDN_BASE}/images1.mp4`,
@@ -468,6 +469,7 @@ const MEDIA_URLS = {
   copytrade9: `${MEDIA_CDN_BASE}/copytrade9.jpg`,
   copytrade10: `${MEDIA_CDN_BASE}/copytrade10.jpg`,
   copytrade11: `${MEDIA_CDN_BASE}/copytrade11.jpg`,
+  sniperalertimg: `${MEDIA_CDN_BASE}/sniperalertimg.jpeg`,
 };
 
 const mediaCache = new Map();
@@ -1400,7 +1402,7 @@ async function handleStakeToken(ctx, state, token) {
   });
 }
 
-const allImageKeys = ["copytrader1", "copytrader2", "copytrader3", "copytrade4", "copytrade5", "copytrade6", "copytrade7", "copytrade8", "copytrade9", "copytrade10", "copytrade11"];
+const allImageKeys = ["copytrader1", "copytrader2", "copytrader3", "copytrade4", "copytrade5", "copytrade6", "copytrade7", "copytrade8", "copytrade9", "copytrade10", "copytrade11", "sniperalertimg"];
 
 async function handleDashCopy(ctx, state) {
   const solBalance = state.solBalance || 0;
