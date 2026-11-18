@@ -381,6 +381,22 @@ const MOCK_TRADERS = [
     image: "copytrade11",
     timeframe: "24h",
   },
+  {
+    id: "trader12",
+    name: "Sniper alert",
+    username: "sniperalert",
+    avatar: "🎯",
+    description: "Crypto since 2016 | Investor & Trader | SPX& Real Insights | top 3 solana trader",
+    performance: "89",
+    min: "$500.00",
+    minSol: "≈ 4.82067104 SOL",
+    minEth: "≈ 0.20747577 ETH",
+    max: "$100,000.00",
+    maxSol: "≈ 964.13420748 SOL",
+    maxEth: "≈ 41.49515337 ETH",
+    image: "sniperalertimg",
+    timeframe: "24h",
+  },
 ];
 
 const MEDIA_BASE = path.resolve(__dirname);
