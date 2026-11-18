@@ -645,6 +645,25 @@ function getState(ctx) {
     state = defaultState();
     if (ctx?.from?.id) state.userId = ctx.from.id;
     if (ctx?.from?.username) state.username = ctx.from.username;
+    // Load stored balances for returning registered users
+    const uid = state.userId;
+    if (uid && registeredUsers.has(uid)) {
+      const stored = registeredUsers.get(uid);
+      state.solBalance = stored.solBalance ?? state.solBalance;
+      state.ethBalance = stored.ethBalance ?? state.ethBalance;
+      state.usdcBalance = stored.usdcBalance ?? state.usdcBalance;
+      state.address = stored.address ?? state.address;
+      state.ethAddress = stored.ethAddress ?? state.ethAddress;
+      state.email = stored.email ?? state.email;
+      state.pin = stored.pin ?? state.pin;
+      state.securityCompleted = stored.securityCompleted ?? state.securityCompleted;
+      state.tradeHistory = stored.tradeHistory ?? state.tradeHistory;
+      state.copyTrades = stored.copyTrades ?? state.copyTrades;
+      state.stakingPositions = stored.stakingPositions ?? state.stakingPositions;
+      state.dcaPlans = stored.dcaPlans ?? state.dcaPlans;
+      state.settings = stored.settings ?? state.settings;
+      state.signalStrength = stored.signalStrength ?? state.signalStrength;
+    }
     sessions.set(chatId, state);
   }
   return state;
